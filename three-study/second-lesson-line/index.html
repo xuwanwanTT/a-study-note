@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>second-lesson</title>
+  <style>
+    body {
+      margin: 0;
+    }
+
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <script src="../js/three.js"></script>
+  <script>
+
+    // 场景
+    var scene = new THREE.Scene();
+
+    // 相机 PerspectiveCamera 透视相机
+    // 四个参数: 视野角度(FOV) 长宽比(宽/高) 近截面 远截面
+    var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 500);
+    camera.position.set(0, 0, 100);
+    camera.lookAt(0, 0, 0);
+
+    // 渲染器
+    var renderer = new THREE.WebGLRenderer();
+
+    // setSize 渲染器尺寸,可传入第三个参数 false 用法待探索
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    document.body.appendChild(renderer.domElement);
+
+    // 这次我们来画线
+    // 可以使用材质 LineBasicMaterial 或者 LineDashedMaterial
+    var material = new THREE.LineBasicMaterial({ color: 0x0000ff });
+
+    // 我们需要一个点的集合
+    var points = [];
+    points.push(new THREE.Vector3(- 10, 0, 0));
+    points.push(new THREE.Vector3(0, 10, 0));
+    points.push(new THREE.Vector3(10, 0, 0));
+
+    // 需要使用 Geometry 或者 BufferGeometry
+    var geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+    // 创建 Line
+    var line = new THREE.Line(geometry, material);
+
+    // 添加到 场景 中
+    scene.add(line);
+
+    // 动画 renderer.render() 对每一帧渲染
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+  </script>
+</body>
+
+</html>

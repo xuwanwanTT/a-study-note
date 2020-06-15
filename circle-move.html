@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script>
+    class Circle {
+      constructor(option) {
+        this.init(option);
+        this.angle = 0;
+      }
+
+      init() {
+        const color = [
+          {
+            offset: 0,
+            color: 'red'
+          },
+          {
+            offset: '50%',
+            color: 'green'
+          },
+          {
+            offset: '100%',
+            color: 'pink'
+          }
+        ];
+        const svg = d3.select('#root').append('svg').attr('width', 300).attr('height', 300);
+        const path = svg.append('g').attr('transform', 'translate(150 150)').append('path');
+        const defs = svg.append('defs');
+        const radialGradient = defs.append('radialGradient').attr('id', 'xxx')
+          .attr('cx', 75)
+          .attr('cy', 75)
+          .attr('fx', 150)
+          .attr('fy', 150)
+          .attr('r', 75)
+        const stop = radialGradient.selectAll('stop').data(color).enter()
+          .append('stop')
+          .attr('offset', function (d) { return d.offset })
+          .attr('stop-color', function (d) { return d.color })
+
+        this.svg = svg;
+        this.path = path;
+      }
+
+      draw() {
+        const path = this.path;
+        const angle = this.angle;
+        const r = 75;
+        let circlePath = `A${r},${r} 1 0 1 ${r * Math.sin(angle)},${-r * Math.cos(angle)} `;
+        if (angle > Math.PI && angle < Math.PI * 2) {
+          circlePath = `A${r},${r} 1 1 1 ${r * Math.sin(angle)},${-r * Math.cos(angle)} `;
+        } else if (angle > Math.PI * 2 && angle <= Math.PI * 3) {
+          circlePath = `A${r},${r} 1 1 0 ${r * Math.sin(angle)},${-r * Math.cos(angle)} `;
+        } else if (angle > Math.PI * 3) {
+          circlePath = `A${r},${r} 1 0 0 ${r * Math.sin(angle)},${-r * Math.cos(angle)} `;
+        }
+        const pathTemp = [
+          `M0,0 v${-r} `,
+          circlePath,
+          `L0,0 `
+        ].join('');
+        path.attr('d', pathTemp)
+          .attr('fill', 'url(#xxx)')
+          .attr('stroke', 'black');
+      }
+
+      update() {
+        setInterval(() => {
+          this.angle += Math.PI / 180;
+          if (this.angle > Math.PI * 2 - Math.PI / 180 && this.angle < Math.PI * 2 + Math.PI / 180) { this.angle += Math.PI / 180; }
+          if (this.angle >= Math.PI * 4) { this.angle = 0; }
+          this.draw();
+        }, 1000 / 60);
+      }
+    };
+
+    let circle = new Circle();
+    circle.draw();
+    circle.update();
+
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>third-lesson</title>
+  <style>
+    body {
+      margin: 0;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #info {
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      text-align: center;
+      z-index: 100;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="info">Description</div>
+  <script src="./js/three.js"></script>
+  <script>
+
+    // 场景
+    var scene = new THREE.Scene();
+
+    // 相机 PerspectiveCamera 透视相机
+    // 四个参数: 视野角度(FOV) 长宽比(宽/高) 近截面 远截面
+    var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 500);
+    camera.position.set(0, 0, 10);
+    camera.lookAt(0, 0, 0);
+
+    // 渲染器
+    var renderer = new THREE.WebGLRenderer();
+
+    // setSize 渲染器尺寸,可传入第三个参数 false 用法待探索
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    document.body.appendChild(renderer.domElement);
+
+    // 这次我们来写字
+
+    // 添加到 场景 中
+    scene.add(text);
+
+    // 动画 renderer.render() 对每一帧渲染
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+  </script>
+</body>
+
+</html>

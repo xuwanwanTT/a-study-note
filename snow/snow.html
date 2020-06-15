@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>snow</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    @keyframes snow {
+      0% {
+        background-position-x: 0;
+        background-position-y: 0;
+      }
+
+      50% {
+        background-position-y: 40rem;
+      }
+
+      100% {
+        background-position-x: 40rem;
+        background-position-y: 80rem;
+      }
+    }
+
+    .css-snow {
+      height: 400px;
+      widows: 400px;
+      background-color: rebeccapurple;
+      overflow-y: hidden;
+    }
+
+    .css-snow.start::before,
+    .css-snow.start::after {
+      opacity: 1;
+      filter: none;
+    }
+
+    .css-snow::before {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0;
+      left: -50%;
+      width: 200%;
+      height: 100%;
+      z-index: 1;
+      background-size: 40rem 40rem;
+      background-image: url(./falling-snow2.png);
+      animation: snow 28s linear infinite;
+      opacity: 0;
+      -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+      filter: alpha(opacity=0);
+      transition: opacity 10s;
+    }
+
+    .css-snow::after {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0;
+      left: -50%;
+      width: 200%;
+      height: 100%;
+      z-index: 10;
+      background-size: 40rem 40rem;
+      background-image: url(./falling-snow1.png);
+      animation: snow 18s linear infinite;
+      opacity: 0;
+      filter: alpha(opacity=0);
+      transition: opacity 5s;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="css-snow"></div>
+  <script>
+    window.onload = () => {
+      document.querySelector('div').classList.add('start');
+    };
+  </script>
+</body>
+
+</html>

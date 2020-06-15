@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+
+<body>
+  <iframe src="./dot-move" frameborder="0"></iframe>
+  <script>
+    const iframeDom = document.querySelector('iframe');
+    setTimeout(() => {
+      window.a = 666;
+      iframeDom.contentWindow.location.reload();
+    }, 1000);
+  </script>
+</body>
+
+</html>

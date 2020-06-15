@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>request</title>
+</head>
+
+<body>
+  <script>
+    let xhr = new XMLHttpRequest();
+    let url = 'http://172.16.101.233:8888/nonconformingbuilding/getbuildtypecount';
+    let method = 'post';
+    let parmas = '{"committeeid":0}';
+    xhr.open(method, url, true);
+    xhr.send(parmas);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4 && xhr.status === 200) {
+        const res = JSON.parse(xhr.responseText);
+        document.querySelector('body').append(xhr.responseText);
+      }
+    }
+  </script>
+</body>
+
+</html>

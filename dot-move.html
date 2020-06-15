@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    .wrap {
+      height: 240px;
+      width: 200px;
+      background: rebeccapurple;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 0;
+    }
+
+    .dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      opacity: 0;
+      color: #00ffff;
+    }
+  </style>
+  <script src="./Textscroll.js"></script>
+</head>
+
+<body>
+  <!-- <div class="wrap">
+    <div class="dot">可</div>
+    <div class="dot">视</div>
+    <div class="dot">化</div>
+    <div class="dot">研</div>
+    <div class="dot">发</div>
+    <div class="dot">工</div>
+    <div class="dot">程</div>
+    <div class="dot">师</div>
+    <div class="dot">丨</div>
+    <div class="dot">丨</div>
+    <div class="dot">肖</div>
+    <div class="dot">丰</div>
+  </div> -->
+  <div class="ctx">
+    <canvas width="300" height="400"></canvas>
+  </div>
+
+  <script>
+    let wrap = document.querySelector('.wrap');
+    let dot = document.querySelectorAll('.dot');
+    let len = dot.length;
+    let aniArr = [];
+    for (let i = 0; i < len; i++) {
+      aniArr.push(1 - 1 / len * i);
+    }
+    let aniLen = aniArr.length;
+    let index = 0;
+
+    function move() {
+      if (index > len - 1 + aniLen - 1) { index = aniLen - 1; }
+      if (index === 0) {
+        dot[index].style.opacity = aniArr[index];
+      }
+      for (let i = 0; i <= index; i++) {
+        if (i > len - 1 && i < len - 1 + aniLen) {
+          dot[i - (aniLen - 1)].style.opacity = aniArr[aniArr - (index - i)];
+          dot[i - len].style.opacity = aniArr[index - i];
+        } else {
+          dot[i].style.opacity = aniArr[index - i];
+        }
+      }
+      index++;
+    }
+
+    // setInterval(() => { move() }, 1000 / 10);
+
+    let data = '01010101010101010101';
+    let ctx = document.querySelector('canvas').getContext('2d');
+    let step = 0.01;
+    let angle = 0;
+
+
+    class text {
+      constructor(ctx, ySite) {
+        this.step = 0.01;
+        this.angle = 0;
+        this.ySite = ySite;
+        this.ctx = ctx;
+        this.data = '' + ~~(2 * Math.random());
+        for (let i = 0; i < 19; i++) {
+          this.data += ~~(2 * Math.random());
+        }
+        this.speed = Math.random() * 10 + 10;
+      }
+      draw() {
+        let data = this.data;
+        let step = this.step;
+        let angle = this.angle;
+        let ySite = this.ySite;
+        let ctx = this.ctx;
+        if (step > data.length * 20 + 400) { this.step = 400 }
+        for (let i = 0; i < data.length; i++) {
+          let text = data[i];
+          ctx.save();
+          ctx.globalAlpha = .8 * Math.abs(Math.sin(angle + Math.PI / 2 - (i * Math.PI / 2 / (data.length - 1)))) + .1;
+          let y = -data.length * 20 + 20 * i + step;
+          if (y > 400) { y = -data.length * 20 + 20 * i + step - 400; }
+          ctx.fillText(text, ySite, y);
+          ctx.restore();
+          this.angle += Math.PI / 180 / this.speed;
+        }
+        this.step += 1;
+      }
+    }
+    let textArr = [];
+    for (let i = 0; i < 10; i++) {
+      textArr.push(new text(ctx, 30 * i + 5));
+    }
+    function draw() {
+      ctx.clearRect(0, 0, 300, 400);
+      ctx.beginPath();
+      ctx.fillStyle = 'rebeccapurple';
+      ctx.fillRect(0, 0, 300, 400);
+      ctx.fillStyle = '#00ffff';
+      ctx.font = `${18}px MicrosoftYaHei`;
+      for (let k = 0; k < 10; k++) {
+        textArr[k].draw();
+      }
+      window.requestAnimationFrame(draw);
+    }
+
+    // draw();
+
+    if (0) {
+      Cols = 8;
+      Cl = 36;//Space's are included so real length is 48!
+      Cs = 20;
+      Ts = 14;
+      Tc = '#008800';
+      Tc1 = '#00ff00';
+      MnS = 10;
+      MxS = 30;
+      I = Cs;
+      Sp = new Array(); S = new Array(); Y = new Array();
+      C = new Array(); M = new Array(); B = new Array();
+      RC = new Array(); E = new Array(); Tcc = new Array(0, 1);
+      document.write("<div id='Container' style='position:absolute;top:0;left:-" + Cs + "px'>");
+      document.write("<div style='position:relative'>");
+      for (i = 0; i < Cols; i++) {
+        S[i] = I += Cs;
+        document.write("<div id='A' style='position:absolute;top:0;font-family:Arial;font-size:"
+          + Ts + "px;left:" + S[i] + "px;width:" + Ts + "px;height:0px;color:" + Tc + ";visibility:hidden'></div>");
+      }
+      document.write("</div></div>");
+
+      for (j = 0; j < Cols; j++) {
+        RC[j] = 1 + Math.round(Math.random() * Cl);
+        Y[j] = 0;
+        Sp[j] = Math.round(MnS + Math.random() * MxS);
+        for (i = 0; i < RC[j]; i++) {
+          B[i] = '';
+          C[i] = Math.round(Math.random() * 1) + ' ';
+          M[j] = B[0] += C[i];
+        }
+      }
+      function Cycle() {
+        Container.style.top = window.document.body.scrollTop;
+        for (i = 0; i < Cols; i++) {
+          var r = Math.floor(Math.random() * Tcc.length);
+          E[i] = '<font color=' + Tc1 + '>' + Tcc[r] + '</font>';
+          Y[i] += Sp[i];
+
+          if (Y[i] > window.document.body.clientHeight) {
+            for (i2 = 0; i2 < Cols; i2++) {
+              RC[i2] = 1 + Math.round(Math.random() * Cl);
+              for (i3 = 0; i3 < RC[i2]; i3++) {
+                B[i3] = '';
+                C[i3] = Math.round(Math.random() * 1) + ' ';
+                C[Math.floor(Math.random() * i2)] = '&nbsp;' + ' ';
+                M[i] = B[0] += C[i3];
+                Y[i] = -Ts * M[i].length / 1.5;
+                A[i].style.visibility = 'visible';
+              }
+              Sp[i] = Math.round(MnS + Math.random() * MxS);
+            }
+          }
+          A[i].style.top = Y[i];
+          A[i].innerHTML = M[i] + ' ' + E[i] + ' ';
+        }
+        setTimeout('Cycle()', 20);
+      }
+      Cycle();
+    }
+
+
+    let aniTextDom = new Textscroll({
+      width: 900,
+      height: 800,
+      top: 0,
+      left: 0,
+      textColor: '#00ffff',
+      isRotate: 0
+    });
+    document.querySelector('body').append(aniTextDom.domElement);
+    aniTextDom.draw();
+    window.a = window.parent.a;
+  </script>
+</body>
+
+</html>
