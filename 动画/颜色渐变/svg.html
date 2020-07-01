@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>渐变动画</title>
+</head>
+
+<body>
+
+  <div id="root"></div>
+
+  <script>
+    const NS = 'http://www.w3.org/2000/svg';
+
+    class ShapeAni {
+      constructor(option) {
+        const { shapeArr, width, height } = { ...option };
+        const domWrap = document.createElementNS(NS, 'svg');
+        domWrap.setAttribute('width', width);
+        domWrap.setAttribute('height', height);
+        this.domWrap = domWrap;
+        this.drawShape(shapeArr);
+      }
+
+      drawShape(arr) {
+        const path = document.createElementNS(NS, 'path');
+        path.setAttribute('d', arr.join(''))
+        this.domWrap.append(path);
+      }
+
+      ani() {
+        this._timer = requestAnimationFrame(this.ani);
+      }
+
+      stopAni() {
+        cancelAnimationFrame(this.ani);
+      }
+    };
+
+    const option = { shapeArr: [], width: 800, height: 600 };
+    const shape = new ShapeAni(option);
+
+    document.querySelector('#root').append(shape.domWrap);
+  </script>
+
+</body>
+
+</html>
