@@ -5,6 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>渐变动画</title>
+  <style>
+    body {
+      background-color: purple;
+    }
+  </style>
 </head>
 
 <body>
@@ -20,17 +25,100 @@
         const domWrap = document.createElementNS(NS, 'svg');
         domWrap.setAttribute('width', width);
         domWrap.setAttribute('height', height);
+        const defsDom = document.createElementNS(NS, 'defs');
+        domWrap.append(defsDom);
+
         this.domWrap = domWrap;
+        this.defsDom = defsDom;
+        this.diff = 0;
+        this.speed = 0.1;
+        this.lightRange = 25;
+
         this.drawShape(shapeArr);
+        this.creatColor(40);
+        this.ani = this.ani.bind(this);
       }
 
       drawShape(arr) {
-        const path = document.createElementNS(NS, 'path');
-        path.setAttribute('d', arr.join(''))
-        this.domWrap.append(path);
+        const pathDom = document.createElementNS(NS, 'text');
+        pathDom.innerHTML = '好好学习 天天向上 ！';
+        pathDom.setAttribute('x', 100);
+        pathDom.setAttribute('y', 100);
+
+        const pathDom1 = document.createElementNS(NS, 'text');
+        pathDom1.innerHTML = '好好学习 天天向上 ！';
+        pathDom1.setAttribute('x', 100);
+        pathDom1.setAttribute('y', 100);
+
+        // const pathDom = document.createElementNS(NS, 'path');
+        // const pathDom1 = document.createElementNS(NS, 'path');
+        // const path = arr.map((s, i) => i ? `L${s[0]},${s[1]} ` : `M${s[0]},${s[1]} `);
+        // pathDom.setAttribute('d', path.join('') + 'Z');
+        // pathDom1.setAttribute('d', path.join('') + 'Z');
+        pathDom.setAttribute('fill', 'url(#svg-color)');
+
+        this.domWrap.append(pathDom1);
+        this.domWrap.append(pathDom);
+        this.pathDom = pathDom;
+      }
+
+      creatColor(diff) {
+        const checkDom = this.defsDom.querySelector('linearGradient');
+        if (checkDom) checkDom.remove();
+        const linearGradient = document.createElementNS(NS, 'linearGradient');
+        linearGradient.setAttribute('id', 'svg-color');
+        linearGradient.setAttribute('x1', '0');
+        linearGradient.setAttribute('y1', '0');
+        linearGradient.setAttribute('x2', '1');
+        linearGradient.setAttribute('y2', '0');
+        const lightRange = this.lightRange;;
+
+        const stopDom0 = document.createElementNS(NS, 'stop');
+        stopDom0.setAttribute('offset', '0%')
+        stopDom0.setAttribute('stop-color', 'black');
+
+        const stopDom01 = document.createElementNS(NS, 'stop');
+        stopDom01.setAttribute('offset', diff + '%')
+        stopDom01.setAttribute('stop-color', 'black');
+
+        const stopDom1 = document.createElementNS(NS, 'stop');
+        stopDom1.setAttribute('offset', diff + '%')
+        stopDom1.setAttribute('stop-color', 'white');
+        stopDom1.setAttribute('stop-opacity', '0');
+
+        const stopDom11 = document.createElementNS(NS, 'stop');
+        stopDom11.setAttribute('offset', lightRange / 2 + diff + '%')
+        stopDom11.setAttribute('stop-color', 'white');
+        stopDom11.setAttribute('stop-opacity', '0.6');
+
+        const stopDom2 = document.createElementNS(NS, 'stop');
+        stopDom2.setAttribute('offset', lightRange + diff + '%');
+        stopDom2.setAttribute('stop-color', 'white');
+        stopDom2.setAttribute('stop-opacity', '0');
+
+        const stopDom3 = document.createElementNS(NS, 'stop');
+        stopDom3.setAttribute('offset', lightRange + diff + '%');
+        stopDom3.setAttribute('stop-color', 'black');
+
+        const stopDom31 = document.createElementNS(NS, 'stop');
+        stopDom31.setAttribute('offset', '100%');
+        stopDom31.setAttribute('stop-color', 'black');
+
+        linearGradient.append(stopDom0);
+        linearGradient.append(stopDom01);
+        linearGradient.append(stopDom1);
+        linearGradient.append(stopDom11);
+        linearGradient.append(stopDom2);
+        linearGradient.append(stopDom3);
+        linearGradient.append(stopDom31);
+        this.defsDom.append(linearGradient);
       }
 
       ani() {
+        const lightRange = this.lightRange;
+        this.diff += this.speed;
+        if (this.diff > 100 + lightRange || this.diff < -lightRange) this.diff = -lightRange;
+        this.creatColor(this.diff);
         this._timer = requestAnimationFrame(this.ani);
       }
 
@@ -39,8 +127,9 @@
       }
     };
 
-    const option = { shapeArr: [], width: 800, height: 600 };
+    const option = { shapeArr: [[100, 100], [150, 233], [70, 300]], width: 800, height: 600 };
     const shape = new ShapeAni(option);
+    shape.ani();
 
     document.querySelector('#root').append(shape.domWrap);
   </script>
