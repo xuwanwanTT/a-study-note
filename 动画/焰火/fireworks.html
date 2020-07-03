@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>焰火</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script>
+    // class Fire {
+    //   constructor(options = { color: 'pink', radius: 20 }) {
+    //     this.x = 0;
+    //     this.y = 0;
+    //     this.vy = 0;
+    //     this.vx = 0;
+    //     this.vyo = 0;
+    //     this.vxo = 0;
+    //     this.rotation = 0;
+    //     this.color = options.color;
+    //     this.radius = options.radius;
+    //   }
+
+    //   draw(ctx) {
+    //     ctx.save();
+    //     ctx.translate(this.x, this.y);
+    //     ctx.rotate(this.rotation);
+    //     ctx.lineWidth = 2;
+    //     ctx.fillStyle = this.color;
+    //     ctx.beginPath();
+    //     ctx.arc(0, 0, this.radius, 0, Math.PI * 2, false);
+    //     ctx.closePath();
+    //     ctx.fill();
+    //     ctx.restore();
+    //   }
+
+    // };
+
+    // function getRandomColor() {
+    //   return "#" + ("00000" + ((Math.random() * 16777215 + 0.5) >> 0).toString(16)).slice(-6);
+    // }
+
+    // const canvas = document.createElement('canvas');
+    // document.querySelector('#root').append(canvas);
+    // const ctx = canvas.getContext("2d");
+    // const width = canvas.width = window.innerWidth;
+    // const height = canvas.height = window.innerHeight;
+    // const num = 30;
+    // const fireArr = [];
+    // const gravity = 1 / 60;
+
+    // for (let i = 0; i < num; i++) {
+    //   let fireItem = new Fire({ color: getRandomColor(), radius: 2 + 3 * Math.random() })
+    //   fireItem.x = Math.random() * width;
+    //   fireItem.y = Math.random() * height;
+    //   fireItem.vxo = fireItem.vx = Math.sin(Math.PI * 2 / num * i) * 5;
+    //   fireItem.vxsp = fireItem.vx > 0 ? gravity : -1 * gravity;
+    //   console.log(fireItem.vxo, fireItem.vx)
+    //   fireArr.push(fireItem);
+    // }
+
+    // function draw(s) {
+    //   s.vy += gravity;
+    //   s.y += s.vy;
+
+    //   s.vx -= s.vxsp;
+    //   s.x += s.vx;
+
+    //   s.draw(ctx);
+    // }
+
+    // function drawFram() {
+    //   requestAnimationFrame(drawFram);
+    //   ctx.clearRect(0, 0, width, height);
+    //   var i = fireArr.length;
+    //   while (i--) {
+    //     let s = fireArr[i];
+    //     if (s.x < 0 || s.x > width || s.y < 0 || s.y > height) {
+    //       fireArr.forEach(n => {
+    //         n.x = width / 2;
+    //         n.y = height / 2;
+    //         n.vy = n.vyo;
+    //         n.vx = n.vxo;
+    //       })
+    //     }
+    //     draw(s);
+    //   }
+    // }
+
+    // drawFram();
+
+    const canvas = document.createElement('canvas');
+    document.querySelector('#root').append(canvas);
+    canvas.width = document.documentElement.clientWidth;
+    canvas.height = document.documentElement.clientHeight;
+    cw = document.documentElement.clientWidth;
+    ch = document.documentElement.clientHeight;
+    //转化2d模型
+    var ctx = canvas.getContext("2d");
+
+    //烟花数组
+    var firework = [];
+    //烟花碎片数组
+    var particles = [];
+    var hue = 50;//颜色的色调
+    timerTick = 0;
+    timerTotal = 20;
+    //随机min max之间的随机值
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+    //计算两点之间的距离
+    function distances(sx, sy, tx, ty) {
+      var xdistances = sx - tx;
+      var ydistances = sy - ty;
+      return Math.sqrt(Math.pow(xdistances, 2) + Math.pow(ydistances, 2));
+    }
+
+    //定义烟花对象
+    /*sx,sy  初始坐标  ,tx,ty 目标坐标*/
+    function Firework(sx, sy, tx, ty) {
+      this.x = sx;
+      this.y = sy;
+      this.sx = sx;
+      this.sy = sy;
+      this.tx = tx;
+      this.ty = ty;
+      //计算两点之间的距离
+      this.targetDistances = distances(sx, sy, tx, ty);
+      //运行距离
+      this.distancesY = 0;
+      //定义运动轨迹
+      this.guiji = [];
+      this.guijicount = 1;
+      while (this.guijicount--) {
+        this.guiji.push([this.x, this.y]);
+      }
+      //设置相关属性
+      //计算角度
+      this.angle = Math.atan2(ty - sy, tx - sx);
+      //计算速度
+      this.speed = 2;
+      //计算加速度
+      this.a = 1.05;
+      //透明度
+      this.brightness = random(50, 70);
+      //目标圆的半径
+      this.targetRad = 5;
+    }
+    //开始更新烟花的位置
+    Firework.prototype.update = function (index) {
+      this.guiji.pop();
+      this.guiji.push([this.x, this.y]);
+      //目标圆运动（由小变大的过程）
+      if (this.targetRad < 8) {
+        this.targetRad += 0.3;
+      }
+      else {
+        this.targetRad = 1;
+      }
+      //根据加速度计算速度
+      this.speed *= this.a;
+      var vx = Math.cos(this.angle) * this.speed;//x方向的速度
+      var vy = Math.sin(this.angle) * this.speed;//y方向的速度
+      //重新计算之间的距离
+      this.distancesY = distances(this.sx, this.sy, this.x + vx, this.y + vy);
+      //判断是否到达目标位置
+      if (this.distancesY >= this.targetDistances) {
+        createParticles(this.tx, this.ty); //（实现烟花爆炸的关键）
+        firework.splice(index, 1); //烟花上升结束并消失
+      }
+      else {
+        this.x += vx;
+        this.y += vy;//烟花继续上升
+      }
+
+    }
+    //开始画烟花上升运行轨迹
+    Firework.prototype.draw = function () {
+      ctx.beginPath();
+      ctx.moveTo(this.guiji[this.guiji.length - 1][0], this.guiji[this.guiji.length - 1][1]);
+      ctx.lineTo(this.x, this.y);
+      ctx.strokeStyle = 'hsl(' + hue + ',100%,' + this.brightness + '%)';
+      ctx.stroke();
+      //画出目标位置小圆
+      ctx.beginPath();
+      ctx.arc(this.tx, this.ty, this.targetRad, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    //烟花爆炸
+    function Particle(x, y) {
+      this.x = x;
+      this.y = y;
+      this.guiji = [];
+      this.guijicount = 10;
+      while (this.guijicount--) {
+        this.guiji.push([this.x, this.y]);
+      }
+      //生成任意方向的碎屑
+      this.angle = random(0, 2 * Math.PI);
+      this.speed = random(2, 10);//随机速度
+      this.friction = 0.95;//摩擦力
+      this.gravity = 1;//重力
+      this.hue = random(hue - 20, hue + 20);//生成色彩相近的碎屑
+      this.brightness = random(50, 80);//随机透明
+      this.alpha = 1;//初始化透明度
+      this.decay = random(0.015, 0.03);//碎屑消失时间
+    }
+
+    Particle.prototype.update = function (index) {
+      this.guiji.pop();
+      this.guiji.unshift([this.x, this.y]);
+      this.speed *= this.friction;
+      this.x += Math.cos(this.angle) * this.speed;
+      this.y += Math.sin(this.angle) * this.speed + this.gravity;
+      this.alpha -= this.decay;
+      if (this.alpha <= this.decay) {
+        particles.splice(index, 1);
+      }
+    }
+    //画碎屑轨迹
+    Particle.prototype.draw = function () {
+      ctx.beginPath();
+      ctx.moveTo(this.guiji[this.guiji.length - 1][0], this.guiji[this.guiji.length - 1][1]);
+      ctx.lineTo(this.x, this.y);
+      ctx.strokeStyle = 'hsla(' + this.hue + ',100%,' + this.brightness + '%,' + this.alpha + ')';
+      ctx.stroke();
+    }
+    function createParticles(x, y) {
+      //生成300个烟花碎屑
+      var particleCount = 300;
+      while (particleCount--) {
+        particles.push(new Particle(x, y));
+      }
+    }
+    function loop() {
+      requestAnimationFrame(loop);
+      hue += 0.5;
+      ctx.globalCompositeOperation = 'destination-out'; //修改源图  当前绘制的显示  源图隐藏
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.globalCompositeOperation = 'lighter';
+
+      var i = firework.length;
+      while (i--) {
+        firework[i].draw();
+        firework[i].update(i);
+      }
+
+      var i = particles.length;
+      while (i--) {
+        particles[i].draw();
+        particles[i].update(i);
+      }
+
+      if (timerTick >= timerTotal) {
+        //创建烟花对象
+        firework.push(new Firework(cw / 2, ch, random(0, cw), random(0, ch)));
+        timerTick = 0;//当前时间
+      }
+      else {
+        timerTick++;
+      }
+    }
+    window.onload = loop();
+
+  </script>
+</body>
+
+</html>

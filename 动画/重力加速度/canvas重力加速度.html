@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <script src="./arrow.js"></script>
+</head>
+
+<body style="background:#333;">
+  <canvas id="canvas"></canvas>
+  <script>
+    window.onload = function () {
+      var canvas = document.getElementById('canvas');
+      var ctx = canvas.getContext("2d");
+      var width = canvas.width = window.innerWidth;
+      var height = canvas.height = window.innerHeight;
+      var num = 80;
+      var arrows = [];
+      var gravity = 0.5;
+
+
+      function getRandomColor() {
+        return "#" + ("00000" + ((Math.random() * 16777215 + 0.5) >> 0).toString(16)).slice(-6);
+      }
+
+      for (var i = 0; i < num; i++) {
+        var arrow = new Arrow(3, getRandomColor());
+        arrow.x = Math.random() * width;
+        arrow.y = Math.random() * height;
+        arrow.vx = Math.random() * 2 - 1; // -1 1
+        arrow.vy = -10; // -1 1
+        arrows.push(arrow);
+      }
+
+      function draw(s) {
+        s.vy += gravity;
+        s.x += s.vx;
+        s.y += s.vy;
+
+        if (s.x < 0 || s.x > width || s.y < 0 || s.y > height) {
+          s.x = width / 2;
+          s.y = height / 2;
+          s.vx = Math.random() * 20 - 10;
+          s.vy = -20;
+        }
+        s.draw(ctx);
+      }
+
+      function drawFram() {
+        requestAnimationFrame(drawFram);
+        ctx.clearRect(0, 0, width, height);
+        var i = arrows.length;
+        while (i--) {
+          draw(arrows[i])
+        }
+      }
+
+      drawFram();
+    }
+  </script>
+</body>
+
+</html>
