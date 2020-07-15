@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>焰火</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #000;
+    }
+
+    #app {
+      position: absolute;
+      top: 100px;
+      left: 100px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="root"></div>
+
+  <script>
+
+    const cw = window.innerWidth;
+    const ch = window.innerHeight;
+    const canvas = document.createElement('canvas');
+    canvas.width = cw;
+    canvas.height = ch;
+    const ctx = canvas.getContext('2d');
+
+    // Math.random 随机数
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    // 计算两点间距离
+    function calculateDistance(p1x, p1y, p2x, p2y) {
+      var xDistance = p1x - p2x,
+        yDistance = p1y - p2y;
+      return Math.sqrt(Math.pow(xDistance, 2) + Math.pow(yDistance, 2));
+    }
+
+    const fireArr = [];
+
+    const boomArr = [];
+
+    const audioReadyArr = [];
+
+    const audioBoomArr = [];
+
+    const aniTickTotal = 30;
+    let aniTick = 0;
+
+    const readySound = () => {
+      let audio = document.createElement('audio');
+      audio.setAttribute('src', './ready.mp3');
+      audio.setAttribute('type', 'audio/mpeg');
+      document.querySelector('#root').append(audio);
+      audio.play();
+      audioReadyArr.push(audio);
+    };
+
+    const boomSound = () => {
+      let audio = document.createElement('audio');
+      audio.setAttribute('src', './boom.mp3');
+      audio.setAttribute('type', 'audio/mpeg');
+      document.querySelector('#root').append(audio);
+      audio.play();
+      audioBoomArr.push(audio);
+    };
+
+    class Boom {
+      constructor(ctx, x, y, hue, brightness) {
+        this.ctx = ctx;
+        this.x = x;
+        this.y = y;
+
+        this.speed = Math.random() * 5 + 5; //  速度
+        this.friction = 0.95; // 速度衰减
+        this.angle = Math.random() * Math.PI * 2; // 运动方向
+        this.gravity = 1; // Y 方向重力加速度
+        this.decay = Math.random() * 0.015 + 0.015; // 存留时间 diff 减量
+
+        this.alpha = 1;
+        this.hue = random(hue - 20, hue + 20);
+        this.brightness = random(brightness + 20, brightness - 20);
+
+        // 记录 n 个轨迹点, 连线首尾, 作为可见移动线段
+        let siteArrLength = 5;
+        this.siteArr = [];
+        while (siteArrLength--) {
+          this.siteArr.push([this.x, this.y]);
+        }
+      }
+
+      draw() {
+        const ctx = this.ctx;
+
+        ctx.beginPath();
+        // ctx.moveTo(this.siteArr[this.siteArr.length - 1][0], this.siteArr[this.siteArr.length - 1][1]);
+        // ctx.lineTo(this.x, this.y);
+        let len = this.siteArr.length - 1;
+        for (let i = len; i > 0; i--) {
+          if (i === len) {
+            ctx.moveTo(this.siteArr[len][0], this.siteArr[len][1]);
+          } else {
+            ctx.lineTo(this.siteArr[i][0], this.siteArr[i][1]);
+          }
+        }
+        ctx.strokeStyle = 'hsla(' + this.hue + ', 100%, ' + this.brightness + '%, ' + this.alpha + ')';
+        ctx.stroke();
+      }
+
+      update(arr, index) {
+        this.speed *= this.friction;
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed + this.gravity;
+
+        this.alpha -= this.decay;
+
+        // 更新轨迹点数组
+        this.siteArr.pop();
+        this.siteArr.unshift([this.x, this.y]);
+
+        if (this.alpha < 0) {
+          boomArr[arr].splice(index, 1);
+          if (boomArr[arr].length < 1) {
+            boomArr.splice(arr, 1);
+            audioBoomArr[arr].remove();
+            audioBoomArr.splice(arr, 1);
+          }
+        }
+      }
+
+    };
+
+    class FireReady {
+      constructor(ctx, sx, sy, tx, ty, hue, brightness) {
+        this.ctx = ctx;
+        // site
+        this.x = sx;
+        this.y = sy;
+
+        // source
+        this.sx = sx;
+        this.sy = sy;
+
+        // target
+        this.tx = tx;
+        this.ty = ty;
+
+        this.distance = calculateDistance(sx, sy, tx, ty);
+        this.fireMoved = 0;
+
+        this.siteArr = [];
+        let siteArrLength = 3;
+        while (siteArrLength--) {
+          this.siteArr.push([this.x, this.y]);
+        }
+
+        this.angle = Math.atan2(ty - sy, tx - sx);
+        this.speed = 2;
+        this.acceleration = 1.05; // 加速度
+        this.targetRadius = 1;
+
+        this.hue = hue;
+        this.brightness = brightness;
+      }
+
+      draw() {
+        const ctx = this.ctx;
+
+        ctx.beginPath();
+        ctx.moveTo(this.siteArr[this.siteArr.length - 1][0], this.siteArr[this.siteArr.length - 1][1]);
+        ctx.lineTo(this.x, this.y);
+        ctx.strokeStyle = 'hsl(' + this.hue + ', 100%, ' + this.brightness + '%)';
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(this.tx, this.ty, this.targetRadius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      update(index) {
+
+        if (this.targetRadius < 8) {
+          this.targetRadius += 0.3;
+        } else {
+          this.targetRadius = 1;
+        }
+
+        this.speed *= this.acceleration;
+
+        let vx = Math.cos(this.angle) * this.speed;
+        let vy = Math.sin(this.angle) * this.speed;
+
+        this.x += vx;
+        this.y += vy;
+
+        this.fireMoved = calculateDistance(this.sx, this.sy, this.x + vx, this.y + vy);
+
+        if (this.fireMoved >= this.distance) {
+          boomSound();
+
+          createBoom(this.tx, this.ty, this.hue, this.brightness);
+          fireArr.splice(index, 1);
+          audioReadyArr[index].remove();
+          audioReadyArr.splice(index, 1);
+        }
+
+        this.siteArr.pop();
+        this.siteArr.unshift([this.x, this.y]);
+
+      }
+
+    }
+
+    function createBoom(x, y, hue, brightness) {
+      let boomLength = 233;
+      let temp = [];
+      while (boomLength--) {
+        temp.push(new Boom(ctx, x, y, hue, brightness))
+      }
+      boomArr.push(temp);
+    }
+
+    const aniFire = () => {
+      requestAnimationFrame(aniFire);
+
+      // globalCompositeOperation 用法
+      ctx.globalCompositeOperation = 'destination-out'; // 产生拖影效果
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(0, 0, cw, ch);
+
+      ctx.globalCompositeOperation = 'lighter'; // 恢复作画
+
+      fireArr.forEach((s, i) => {
+        s.draw();
+        s.update(i);
+      })
+
+      boomArr.forEach((s, i) => {
+        s.forEach((m, n) => {
+          m.draw();
+          m.update(i, n);
+        });
+      });
+
+      if (aniTick > aniTickTotal) {
+        let mx = Math.random() * (cw - 400) + 200;
+        let my = Math.random() * (ch - 400) + 200;
+        let hue = random(1, 180);
+        let brightness = random(1, 100);
+        readySound();
+        fireArr.push(new FireReady(ctx, cw / 2, ch, mx, my, hue, brightness))
+        aniTick = 0;
+      } else {
+        aniTick++;
+      }
+
+    };
+
+    document.addEventListener('click', function (e) {
+      let mx = e.pageX - canvas.offsetLeft;
+      let my = e.pageY - canvas.offsetTop;
+      let hue = random(1, 180);
+      let brightness = random(1, 100);
+      readySound();
+      fireArr.push(new FireReady(ctx, cw / 2, ch, mx, my, hue, brightness));
+    });
+
+    aniFire();
+
+    document.querySelector('#root').append(canvas);
+
+  </script>
+
+</body>
+
+</html>
