@@ -1,11 +1,28 @@
-program
-  .option('-d, --debug', 'output extra debugging')
-  .option('-s, --small', 'small pizza size')
-  .option('-p, --pizza-type <type>', 'flavour of pizza');
+const homedir = require('os').homedir();
+const home = process.env.HOME || homedir;
+const path = require('path');
+const fs = require('fs');
+const dbPath = path.join(home, '.todo');
 
-program.parse(process.argv);
+module.exports.add = (title) => {
+  fs.readFile(dbPath, { flag: 'a+' }, (error, data) => {
+    if (error) return false;
+    let list;
+    try {
+      list = JSON.parse(data);
+    } catch (error2) {
+      list = [];
+    }
 
-if (program.debug) console.log(program.opts());
-console.log('pizza details:');
-if (program.small) console.log('- small pizza size');
-if (program.pizzaType) console.log(`- ${program.pizzaType}`);
+    const task = { title, done: 'false' };
+    list.push(task);
+    const string = JSON.stringify(list);
+
+    fs.writeFile(dbPath, string, (error3) => {
+      if (error3) console.log(error3);
+    });
+
+  })
+};
+
+module.exports.clear = () => { };
