@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>写一遍 three 例子中的 animation keyframes</title>
+  <style>
+    *,
+    *::after,
+    *::before {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #bfe3dd;
+      color: #000;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container"></div>
+
+  <script type="module">
+    import * as THREE from '../asset/three.js';
+
+    import { OrbitControls } from '../asset/controls/OrbitControls.js';
+    import { GLTFLoader } from '../asset/loaders/GLTFLoader.js';
+    import { DRACOLoader } from '../asset/loaders/DRACOLoader.js';
+
+    const container = document.getElementById('container');
+
+    // new renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    // 设置渲染器的像素比例 window.devicePixelRatio 浏览器的像素比例
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    // 设置色彩空间，确保 web 呈现和模型一致
+    renderer.outputEncoding = THREE.sRGBEncoding;
+
+    container.appendChild(renderer.domElement);
+
+    // new scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xbfe3dd);
+
+    // new camera
+    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
+    camera.position.set(5, 2, 8);
+
+    // new controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 0.5, 0);
+    controls.update();
+    // 右键拖拽
+    controls.enablePan = true;
+    // damping (阻尼) 缓动效果
+    controls.enableDamping = true;
+
+    // 半球光
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x000000, 0.4));
+
+    // 平行光
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(5, 2, 8);
+    scene.add(dirLight);
+
+    let mixer;
+
+    // new loader
+    const loader = new GLTFLoader();
+
+    // load 前的压缩处理
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('../asset/libs/draco/gltf/');
+    loader.setDRACOLoader(dracoLoader);
+
+    loader.load('../asset/models/gltf/LittlestTokyo.glb', function (gltf) {
+      const model = gltf.scene;
+      model.position.set(1, 1, 0);
+      model.scale.set(0.01, 0.01, 0.01);
+
+      scene.add(model);
+
+      // AnimationMixer 场景中特定对象的动画播放器
+      // clipAction 帧
+      // play()
+      mixer = new THREE.AnimationMixer(model);
+      // 全局时间(mixer time)的比例因子 0 表示停止
+      mixer.timeScale = 1;
+      mixer.clipAction(gltf.animations[0]).play();
+
+      animate();
+
+    }, undefined, function (error) {
+      console.log(error)
+    });
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+
+      mixer.update(delta);
+
+      controls.update();
+
+      renderer.render(scene, camera);
+
+    }
+
+    window.onresize = function () {
+
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+    };
+
+    window.onclick = function () {
+      mixer.timeScale = +(!mixer.timeScale);
+    }
+
+  </script>
+
+</body>
+
+</html>

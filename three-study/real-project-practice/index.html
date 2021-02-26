@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>项目中的 three</title>
+  <style>
+    *,
+    *::after,
+    *::before {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #bfe3dd;
+      color: #000;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container"></div>
+
+  <script type="module">
+    import * as THREE from '../asset/three.js';
+
+    import { OrbitControls } from '../asset/controls/OrbitControls.js';
+    import { GLTFLoader } from '../asset/loaders/GLTFLoader.js';
+    import { DRACOLoader } from '../asset/loaders/DRACOLoader.js';
+    import { RenderPass } from '../asset/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from '../asset/postprocessing/UnrealBloomPass.js';
+    import { EffectComposer } from '../asset/postprocessing/EffectComposer.js';
+    import { ShaderPass } from '../asset/postprocessing/ShaderPass.js';
+    import { OutlinePass } from '../asset/postprocessing/OutlinePass.js';
+
+    const container = document.getElementById('container');
+
+    const BLOOM_SCENE = 1;
+    const ENTIRE_SCENE = 0;
+
+    // new renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    // 设置渲染器的像素比例 window.devicePixelRatio 浏览器的像素比例
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    // 设置色彩空间
+    // renderer.outputEncoding = THREE.sRGBEncoding;
+
+    container.appendChild(renderer.domElement);
+
+    // new scene
+    const scene = new THREE.Scene();
+    scene.name = "rootScene";
+    scene.background = new THREE.Color('black');
+
+    // new camera
+    const camera = new THREE.PerspectiveCamera(2.5, window.innerWidth / window.innerHeight, 1, 7500);
+    camera.position.set(180, 70, -150);
+
+    // new controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 0.5, 0);
+    controls.update();
+    // 右键拖拽
+    controls.enablePan = true;
+    // damping (阻尼) 缓动效果
+    controls.enableDamping = true;
+
+    // new light
+    const ambientLight = new THREE.AmbientLight("#3192ff", 0.65);
+    const spotLight1 = new THREE.SpotLight(0xffffff, 0.46);
+    spotLight1.position.set(200, 1500, 200);
+
+    scene.add(ambientLight);
+    scene.add(spotLight1);
+
+    // 初始化bloomPass
+    const params = {
+      exposure: 1,
+      bloomStrength: 0.46,
+      bloomThreshold: 0,
+      bloomRadius: 0,
+    };
+    const renderScene = new RenderPass(scene, camera);
+
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      1.5,
+      0.4,
+      0.85
+    );
+    bloomPass.threshold = params.bloomThreshold;
+    bloomPass.strength = params.bloomStrength;
+    bloomPass.radius = params.bloomRadius;
+
+    const bloomComposer = new EffectComposer(renderer);
+    bloomComposer.renderToScreen = false;
+    bloomComposer.addPass(renderScene);
+    bloomComposer.addPass(bloomPass);
+
+    const finalPass = new ShaderPass(
+      new THREE.ShaderMaterial({
+        uniforms: {
+          baseTexture: { value: null },
+          bloomTexture: { value: bloomComposer.renderTarget2.texture },
+        },
+        vertexShader: `varying vec2 vUv;
+
+                void main() {
+    
+                    vUv = uv;
+    
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    
+                }`,
+        fragmentShader: `uniform sampler2D baseTexture;
+                uniform sampler2D bloomTexture;
+    
+                varying vec2 vUv;
+    
+                vec4 getTexture( sampler2D texelToLinearTexture ) {
+    
+                    return mapTexelToLinear( texture2D( texelToLinearTexture , vUv ) );
+    
+                }
+    
+                void main() {
+    
+                    gl_FragColor = ( getTexture( baseTexture ) + vec4( 1.0 ) * getTexture( bloomTexture ) );
+    
+                }`,
+        defines: {},
+      }),
+      "baseTexture"
+    );
+    finalPass.needsSwap = true;
+
+    const finalComposer = new EffectComposer(renderer);
+    finalComposer.addPass(renderScene);
+    finalComposer.addPass(finalPass);
+
+    const outlinePass = new OutlinePass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      scene,
+      camera
+    );
+    outlinePass.edgeGlow = 2;
+    outlinePass.visibleEdgeColor.set(new THREE.Color("red"));
+    finalComposer.addPass(outlinePass);
+
+    const undergroundLine = [];
+
+    // loader
+    const gltfLoader = new GLTFLoader();
+
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('../asset/libs/draco/gltf/');
+    gltfLoader.setDRACOLoader(dracoLoader);
+
+    gltfLoader.load('obj/main.glb', (gltf) => {
+      let main = gltf.scene;
+      main.traverse((obj) => {
+        console.log(obj)
+        if (!obj.isMesh) return;
+        obj.material.transparent = true;
+        obj.material.opacity = 0.6;
+      });
+      scene.add(main);
+    });
+
+    gltfLoader.load("obj/ground.glb", (gltf) => {
+      let obj = gltf.scene;
+      obj.traverse((node) => {
+        if (!node.isMesh) {
+          return;
+        }
+
+        if (node.name === "Layerbuildings") {
+          let material = new THREE.MeshPhongMaterial({
+            transparent: true,
+            opacity: 0.2,
+            color: "#3377ff",
+          });
+          node.material = material;
+        } else if (node.name.indexOf("Text") > -1) {
+          // node.material = this.roadNameMaterial;
+        }
+      });
+      // obj.position.z +=5;
+      obj.scale.set(1.2, 1, 1.2);
+      scene.add(obj);
+    });
+
+    gltfLoader.load("obj/wireframe.glb", (gltf) => {
+      let obj = gltf.scene;
+      let mat = new THREE.MeshPhongMaterial({
+        emissive: "#3192ff",
+        transparent: false,
+        side: THREE.DoubleSide,
+      });
+
+      obj.traverse((o) => {
+        if (!o.isMesh) return;
+        if (
+          o.name == "platform001" ||
+          o.name == "Atop" ||
+          o.name == "Btop" ||
+          o.name == "Ctop"
+        ) {
+          var geometry = o.geometry;
+          var edges = new THREE.EdgesGeometry(geometry);
+          var line = new THREE.LineSegments(
+            edges,
+            new THREE.LineBasicMaterial({
+              color: "#3192ff",
+              transparent: true,
+              opacity: 0.5,
+            })
+          );
+          line.layers.enable(BLOOM_SCENE);
+          o.add(line);
+          undergroundLine.push(line);
+        } else {
+          o.mat = mat;
+        }
+      });
+      scene.add(obj);
+    });
+
+    gltfLoader.load('obj/underground.glb', function (gltf) {
+      let underground = gltf.scene;
+      let undergrounds = [];
+      underground.traverse((obj) => {
+        if (!obj.isMesh) return;
+        var geometry = obj.geometry;
+        var edges = new THREE.EdgesGeometry(geometry);
+        var line = new THREE.LineSegments(
+          edges,
+          new THREE.LineBasicMaterial({
+            color: "#3192ff",
+            transparent: true,
+            opacity: 0.5,
+          })
+        );
+        obj.add(line);
+        line.layers.enable(BLOOM_SCENE);
+        undergrounds.push(obj);
+        undergroundLine.push(line);
+      });
+
+      underground.name = "underground";
+      scene.add(underground);
+
+    }, undefined, function (error) {
+      console.log(error)
+    });
+
+    animate();
+
+    function animate() {
+
+      requestAnimationFrame(animate);
+
+      controls.update();
+
+      renderer.render(scene, camera);
+
+    }
+
+  </script>
+
+</body>
+
+</html>
