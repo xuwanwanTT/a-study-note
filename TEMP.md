@@ -1,0 +1,3 @@
+fabricjs
+
+iconv-lite
