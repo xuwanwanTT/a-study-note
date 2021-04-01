@@ -10,19 +10,22 @@
   color: transparent;
 }
 
-* 修改滚动条
+/* 修改滚动条 */
 
-  wrap::-webkit-scrollbar {/*滚动条宽度*/
-    width:;
-    height:;
-  }
-  wrap::-webkit-scrollbar-thumb {/*滚动条里面小方块*/
-    border-radius: ;
-    box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
-    background: ;
-  }
-  wrap::-webkit-scrollbar-track {/*滚动条里面轨道*/
-    box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
-    border-radius: ;
-    background: ;
-  }
+wrap::-webkit-scrollbar { /* 滚动条宽度 */
+  width: 7px;
+  height: 7px;
+}
+wrap::-webkit-scrollbar-thumb { /* 滚动条里面小方块 */
+  border-radius: 7px;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+  background: transparent;
+}
+wrap::-webkit-scrollbar-track { /* 滚动条里面轨道 */
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+  border-radius: 7px;
+  background: transparent;
+}
+wrap::-webkit-scrollbar-button { /* 两端箭头 */
+  display: none;
+}

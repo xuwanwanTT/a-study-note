@@ -1,0 +1,12 @@
+{
+  "name": "ansi-to-utf8",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "iconv-lite": "^0.6.2"
+  },
+  "scripts": {
+    "start": "node index.js"
+  }
+}
