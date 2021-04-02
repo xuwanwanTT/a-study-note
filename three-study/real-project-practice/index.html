@@ -54,7 +54,7 @@
     // new scene
     const scene = new THREE.Scene();
     scene.name = "rootScene";
-    scene.background = new THREE.Color('black');
+    scene.background = new THREE.Color('white');
 
     // new camera
     const camera = new THREE.PerspectiveCamera(2.5, window.innerWidth / window.innerHeight, 1, 7500);
@@ -67,89 +67,111 @@
     // 右键拖拽
     controls.enablePan = true;
     // damping (阻尼) 缓动效果
-    controls.enableDamping = true;
+    controls.enableDamping = false;
 
     // new light
-    const ambientLight = new THREE.AmbientLight("#3192ff", 0.65);
-    const spotLight1 = new THREE.SpotLight(0xffffff, 0.46);
-    spotLight1.position.set(200, 1500, 200);
+    // const ambientLight = new THREE.AmbientLight("#3192ff", 0.65);
+    // const spotLight1 = new THREE.SpotLight(0xffffff, 0.46);
+    // spotLight1.position.set(200, 1500, 200);
 
-    scene.add(ambientLight);
-    scene.add(spotLight1);
+    // scene.add(ambientLight);
+    // scene.add(spotLight1);
 
     // 初始化bloomPass
-    const params = {
-      exposure: 1,
-      bloomStrength: 0.46,
-      bloomThreshold: 0,
-      bloomRadius: 0,
-    };
+    // const params = {
+    //   exposure: 1,
+    //   bloomStrength: 0.46,
+    //   bloomThreshold: 0,
+    //   bloomRadius: 0,
+    // };
+    // const renderScene = new RenderPass(scene, camera);
+
+    // const bloomPass = new UnrealBloomPass(
+    //   new THREE.Vector2(window.innerWidth, window.innerHeight),
+    //   1.5,
+    //   0.4,
+    //   0.85
+    // );
+    // bloomPass.threshold = params.bloomThreshold;
+    // bloomPass.strength = params.bloomStrength;
+    // bloomPass.radius = params.bloomRadius;
+
+    // const bloomComposer = new EffectComposer(renderer);
+    // bloomComposer.renderToScreen = false;
+    // bloomComposer.addPass(renderScene);
+    // bloomComposer.addPass(bloomPass);
+
+    // const finalPass = new ShaderPass(
+    //   new THREE.ShaderMaterial({
+    //     uniforms: {
+    //       baseTexture: { value: null },
+    //       bloomTexture: { value: bloomComposer.renderTarget2.texture },
+    //     },
+    //     vertexShader: `varying vec2 vUv;
+
+    //             void main() {
+
+    //                 vUv = uv;
+
+    //                 gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+    //             }`,
+    //     fragmentShader: `uniform sampler2D baseTexture;
+    //             uniform sampler2D bloomTexture;
+
+    //             varying vec2 vUv;
+
+    //             vec4 getTexture( sampler2D texelToLinearTexture ) {
+
+    //                 return mapTexelToLinear( texture2D( texelToLinearTexture , vUv ) );
+
+    //             }
+
+    //             void main() {
+
+    //                 gl_FragColor = ( getTexture( baseTexture ) + vec4( 1.0 ) * getTexture( bloomTexture ) );
+
+    //             }`,
+    //     defines: {},
+    //   }),
+    //   "baseTexture"
+    // );
+    // finalPass.needsSwap = true;
+
+    // const finalComposer = new EffectComposer(renderer);
+    // finalComposer.addPass(renderScene);
+    // finalComposer.addPass(finalPass);
+
+    // const outlinePass = new OutlinePass(
+    //   new THREE.Vector2(window.innerWidth, window.innerHeight),
+    //   scene,
+    //   camera
+    // );
+    // outlinePass.edgeGlow = 2;
+    // outlinePass.visibleEdgeColor.set(new THREE.Color("red"));
+    // finalComposer.addPass(outlinePass);
+
+    scene.add(new THREE.AmbientLight(0x404040));
+
+    const pointLight = new THREE.PointLight(0xffffff, 1);
+    camera.add(pointLight);
+
     const renderScene = new RenderPass(scene, camera);
 
-    const bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
-      1.5,
-      0.4,
-      0.85
-    );
+    const params = {
+      exposure: 1,
+      bloomStrength: 1.5,
+      bloomThreshold: 0,
+      bloomRadius: 0
+    };
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
     bloomPass.threshold = params.bloomThreshold;
     bloomPass.strength = params.bloomStrength;
     bloomPass.radius = params.bloomRadius;
 
-    const bloomComposer = new EffectComposer(renderer);
-    bloomComposer.renderToScreen = false;
-    bloomComposer.addPass(renderScene);
-    bloomComposer.addPass(bloomPass);
-
-    const finalPass = new ShaderPass(
-      new THREE.ShaderMaterial({
-        uniforms: {
-          baseTexture: { value: null },
-          bloomTexture: { value: bloomComposer.renderTarget2.texture },
-        },
-        vertexShader: `varying vec2 vUv;
-
-                void main() {
-    
-                    vUv = uv;
-    
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-    
-                }`,
-        fragmentShader: `uniform sampler2D baseTexture;
-                uniform sampler2D bloomTexture;
-    
-                varying vec2 vUv;
-    
-                vec4 getTexture( sampler2D texelToLinearTexture ) {
-    
-                    return mapTexelToLinear( texture2D( texelToLinearTexture , vUv ) );
-    
-                }
-    
-                void main() {
-    
-                    gl_FragColor = ( getTexture( baseTexture ) + vec4( 1.0 ) * getTexture( bloomTexture ) );
-    
-                }`,
-        defines: {},
-      }),
-      "baseTexture"
-    );
-    finalPass.needsSwap = true;
-
-    const finalComposer = new EffectComposer(renderer);
-    finalComposer.addPass(renderScene);
-    finalComposer.addPass(finalPass);
-
-    const outlinePass = new OutlinePass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
-      scene,
-      camera
-    );
-    outlinePass.edgeGlow = 2;
-    outlinePass.visibleEdgeColor.set(new THREE.Color("red"));
-    finalComposer.addPass(outlinePass);
+    const composer = new EffectComposer(renderer);
+    composer.addPass(renderScene);
+    composer.addPass(bloomPass);
 
     const undergroundLine = [];
 
@@ -160,17 +182,7 @@
     dracoLoader.setDecoderPath('../asset/libs/draco/gltf/');
     gltfLoader.setDRACOLoader(dracoLoader);
 
-    gltfLoader.load('obj/main.glb', (gltf) => {
-      let main = gltf.scene;
-      main.traverse((obj) => {
-        console.log(obj)
-        if (!obj.isMesh) return;
-        obj.material.transparent = true;
-        obj.material.opacity = 0.6;
-      });
-      scene.add(main);
-    });
-
+    // 背景地图
     gltfLoader.load("obj/ground.glb", (gltf) => {
       let obj = gltf.scene;
       obj.traverse((node) => {
@@ -191,19 +203,42 @@
       });
       // obj.position.z +=5;
       obj.scale.set(1.2, 1, 1.2);
-      scene.add(obj);
+      // scene.add(obj);
     });
 
+    // 主体
+    gltfLoader.load('obj/main.glb', (gltf) => {
+      let main = gltf.scene;
+      console.log(main, '主体')
+      main.traverse((obj) => {
+        console.log(obj, '主体item')
+        if (!obj.isMesh) return;
+        let mat = new THREE.MeshPhongMaterial({
+          emissive: "#00ff00",
+          transparent: false,
+          side: THREE.DoubleSide,
+          shininess: 100
+        });
+        obj.mat = mat;
+        obj.material.transparent = true;
+        obj.material.opacity = 0.7;
+      });
+      scene.add(main);
+    });
+
+    // 分层线框
     gltfLoader.load("obj/wireframe.glb", (gltf) => {
       let obj = gltf.scene;
       let mat = new THREE.MeshPhongMaterial({
-        emissive: "#3192ff",
+        emissive: "#00ff00",
         transparent: false,
         side: THREE.DoubleSide,
+        shininess: 100
       });
 
       obj.traverse((o) => {
         if (!o.isMesh) return;
+        console.log(o, o.mat, '分层线框')
         if (
           o.name == "platform001" ||
           o.name == "Atop" ||
@@ -215,9 +250,9 @@
           var line = new THREE.LineSegments(
             edges,
             new THREE.LineBasicMaterial({
-              color: "#3192ff",
-              transparent: true,
-              opacity: 0.5,
+              color: "#ff0000",
+              transparent: false,
+              opacity: 1,
             })
           );
           line.layers.enable(BLOOM_SCENE);
@@ -227,7 +262,7 @@
           o.mat = mat;
         }
       });
-      scene.add(obj);
+      // scene.add(obj);
     });
 
     gltfLoader.load('obj/underground.glb', function (gltf) {
@@ -252,7 +287,7 @@
       });
 
       underground.name = "underground";
-      scene.add(underground);
+      // scene.add(underground);
 
     }, undefined, function (error) {
       console.log(error)
