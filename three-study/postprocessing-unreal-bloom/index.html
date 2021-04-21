@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    *,
+    *::after,
+    *::before {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #bfe3dd;
+      color: #000;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container"></div>
+  <script type="module">
+    import * as THREE from '../asset/three.js';
+
+    import { OrbitControls } from '../asset/controls/OrbitControls.js';
+    import { GLTFLoader } from '../asset/loaders/GLTFLoader.js';
+    import { DRACOLoader } from '../asset/loaders/DRACOLoader.js';
+    import { EffectComposer } from '../asset/postprocessing/EffectComposer.js';
+    import { RenderPass } from '../asset/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from '../asset/postprocessing/UnrealBloomPass.js';
+
+    const container = document.getElementById('container');
+
+    // new renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.toneMapping = THREE.ReinhardToneMapping;
+    // 设置渲染器的像素比例 window.devicePixelRatio 浏览器的像素比例
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    // 设置色彩空间，确保 web 呈现和模型一致
+    renderer.outputEncoding = THREE.sRGBEncoding;
+
+    container.appendChild(renderer.domElement);
+
+    // new scene
+    const scene = new THREE.Scene();
+
+    // new camera
+    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 100);
+    camera.position.set(-5, 2.5, -3.5);
+    scene.add(camera);
+
+    // new controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 0.5, 0);
+    controls.update();
+    // 右键拖拽
+    controls.enablePan = true;
+    // damping (阻尼) 缓动效果
+    controls.enableDamping = true;
+
+    scene.add(new THREE.AmbientLight(0x404040));
+
+    const pointLight = new THREE.PointLight(0xffffff, 1);
+    camera.add(pointLight);
+
+    const renderScene = new RenderPass(scene, camera);
+
+    const params = {
+      exposure: 1,
+      bloomStrength: 1.5,
+      bloomThreshold: 0,
+      bloomRadius: 0
+    };
+
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    bloomPass.threshold = params.bloomThreshold;
+    bloomPass.strength = params.bloomStrength;
+    bloomPass.radius = params.bloomRadius;
+
+    let composer = new EffectComposer(renderer);
+    composer.addPass(renderScene);
+    composer.addPass(bloomPass);
+    let mixer;
+    let clock = new THREE.Clock();
+
+    new GLTFLoader().load('../asset/models/gltf/PrimaryIonDrive.glb', function (gltf) {
+
+      const model = gltf.scene;
+
+      scene.add(model);
+
+      mixer = new THREE.AnimationMixer(model);
+      const clip = gltf.animations[0];
+      mixer.clipAction(clip.optimize()).play();
+
+      animate();
+
+    });
+
+    function animate() {
+
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+
+      mixer.update(delta);
+
+      composer.render();
+
+    }
+
+
+  </script>
+</body>
+
+</html>
