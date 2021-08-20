@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <h1>1</h1>
+  <input type="text">
+  <button>send</button>
+  <div id="show"></div>
+  <script>
+    const socket = new WebSocket('ws://localhost:8090', 'xf');
+    socket.addEventListener('open', function (event) {
+      socket.send('web-socket linked');
+    });
+    document.querySelector('button').addEventListener('click', () => {
+      let input = document.querySelector('input');
+      socket.send(input.value);
+      input.value = '';
+    });
+    socket.addEventListener('message', function (event) {
+      document.querySelector('#show').innerText = event.data;
+    });
+  </script>
+</body>
+
+</html>
