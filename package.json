@@ -1,0 +1,11 @@
+{
+  "name": "a-study-note",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:xuwanwanTT/a-study-note.git",
+  "author": "xuwanwan <1054749044@qq.com>",
+  "license": "MIT",
+  "scripts": {
+    "push": "git add . && git commit -m feat:新增 && git push"
+  }
+}

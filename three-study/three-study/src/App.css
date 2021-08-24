@@ -1,0 +1,51 @@
+:root {
+  --show_width: 1100px; /* 可视区宽度 */
+  --header_height: 70px; /* header 高度 */
+  --footer_height: 50px; /* footer 高度 */
+  --carousel_height:233px; /* 轮播高度 */
+}
+
+.app {
+  width: 100%;
+  min-width: var(--show_width);
+  height: 100%;
+  position: relative;
+}
+
+.header {
+  /* width: 100%;
+  min-width: var(--show_width);
+  height: var(--header_height);
+  position: fixed;
+  z-index: 9;
+  top: 0px;
+  background-color: #f4f4f4;
+  border-bottom: 1px solid #e6ecf0;
+  box-shadow: 0 1px 3px #e6ecf0; */
+}
+
+.layout {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.layout.blog {
+  height: 100%;
+}
+
+.footer {
+  width: var(--show_width);
+  margin-top: 20px;
+  min-width: var(--show_width);
+  height: var(--footer_height);
+  line-height: var(--footer_height);
+}
+
+.page-layout-reset {
+  width: var(--show_width);
+  padding-top: calc(var(--header_height) + 15px);
+}
