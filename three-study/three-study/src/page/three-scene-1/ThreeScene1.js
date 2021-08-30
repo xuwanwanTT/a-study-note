@@ -1,16 +1,26 @@
 import React from 'react';
 
 import * as THREE from 'three';
+import { OBJLoader2 } from 'three/examples/jsm/loaders/OBJLoader2.js';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
+import { MtlObjBridge } from 'three/examples/jsm/loaders/obj2/bridge/MtlObjBridge.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { DragControls } from 'three/examples/jsm/controls/DragControls';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
+import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+
+import { createBackground } from '../lib/three-vignette.js';
 
 const vertexShader = `varying vec2 vUv;
 
@@ -36,29 +46,70 @@ void main() {
 const ENTIRE_SCENE = 0;
 const BLOOM_SCENE = 1;
 
+const FLOOR_SCENE = 2;
+
+const modelList = [
+  { name: '1号楼' },
+  { name: '2号楼' },
+  { name: '3号楼' },
+  { name: '3号楼d' },
+  { name: '5号楼' },
+  { name: '6号楼' },
+  { name: '7号楼' },
+  { name: '8号楼' },
+  { name: '9号楼' },
+  { name: '10号楼' },
+  { name: '11号楼' },
+  { name: '15号楼' },
+  { name: '16号楼' },
+  { name: '17号楼' },
+  { name: '18号楼' },
+  { name: '18c号楼' },
+  { name: '19号楼' },
+  { name: '20号楼' },
+  { name: '21号楼' },
+  // { name: '最终导出模型' }
+];
+
+const bgModelList = [
+  { name: '地板' },
+  { name: '道路' },
+  { name: '建筑物' },
+];
+
+const floorModelList = [
+  { name: '2-2' }
+];
+
 class Langyuan3D extends React.Component {
   constructor() {
     super();
     this.state = {};
-    this.loadModel = this.loadModel.bind(this);
+    this.initRenderer = this.initRenderer.bind(this);
+    this.initCamera = this.initCamera.bind(this);
+    this.initControls = this.initControls.bind(this);
+    this.initHalo = this.initHalo.bind(this);
+    this.initMaterial = this.initMaterial.bind(this);
+    this.initEvent = this.initEvent.bind(this);
+    this.initLoader = this.initLoader.bind(this);
+
     this.draw = this.draw.bind(this);
     this.onPointerDown = this.onPointerDown.bind(this);
-    this.drawBloom = this.drawBloom.bind(this);
-    this.darkenNonBloomed = this.darkenNonBloomed.bind(this);
-    this.restoreMaterial = this.restoreMaterial.bind(this);
-    this.initLoader = this.initLoader.bind(this);
+    this.loadBuildingModel = this.loadBuildingModel.bind(this);
+    this.loadBgModel = this.loadBgModel.bind(this);
+
+    this.group = new THREE.Group();
+    this.floorList = [];
   }
 
   init() {
+    const { initRenderer, initCamera, initControls, initHalo, initMaterial, initEvent, initLoader } = this;
     // new renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.toneMapping = THREE.ReinhardToneMapping;
-    // 设置渲染器的像素比例 window.devicePixelRatio 浏览器的像素比例
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    // 设置色彩空间，确保 web 呈现和模型一致
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    this.renderer = renderer;
+    initRenderer();
+    const renderer = this.renderer;
+
+    this.pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+    this.pmremGenerator.compileEquirectangularShader();
 
     // append
     this.domWrap.appendChild(renderer.domElement);
@@ -68,53 +119,139 @@ class Langyuan3D extends React.Component {
     this.scene = scene;
 
     // new camera
-    const camera = new THREE.PerspectiveCamera(2.5, window.innerWidth / window.innerHeight, 1, 7500);
-    camera.position.set(0, 0, 20);
-    camera.lookAt(0, 0, 0);
-    this.camera = camera;
-
+    initCamera();
+    const camera = this.camera;
     scene.add(camera);
 
+    this.vignette = createBackground({
+      aspect: camera.aspect,
+      grainScale: 0.001, // mattdesl/three-vignette-background#1
+      colors: [0x000000, 0x000000]
+    });
+    this.vignette.name = 'Vignette';
+    this.vignette.renderOrder = -1;
+
+    new RGBELoader()
+      .setDataType(THREE.UnsignedByteType)
+      .load('/xfy/public/obj/langyuan/venice_sunset_1k.hdr', (texture) => {
+        const envMap = this.pmremGenerator.fromEquirectangular(texture).texture;
+        this.pmremGenerator.dispose();
+
+        scene.add(this.vignette);
+        scene.environment = envMap;
+        // scene.background = '';
+      });
+
     // new controls
-    const controls = new OrbitControls(camera, renderer.domElement);
-    // controls.target.set(0, 0.5, 0);
-    // controls.update();
-    controls.enablePan = true; // 右键拖拽
-    // controls.enableDamping = true; // damping (阻尼) 缓动效果
-    this.controls = controls;
+    initControls();
 
     // new light
-    scene.add(new THREE.AmbientLight(0x404040));
-    const pointLight = new THREE.PointLight(0xffffff, 1);
-    camera.add(pointLight);
+    this.initLight();
 
     //
     this.renderScene = new RenderPass(scene, camera);
 
     this.raycaster = new THREE.Raycaster();
     this.raycasterList = []; // 允许点击的物体
+    this.darkModleList = [];
 
     this.mouse = new THREE.Vector2();
 
     this.materials = {};
 
-    this.initHalo();
+    initHalo();
 
-    this.initMaterial();
+    initMaterial();
 
-    this.initEvent();
+    initEvent();
 
-    this.initLoader();
+    initLoader();
+  }
+
+  initRenderer() {
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.toneMapping = THREE.ReinhardToneMapping;
+    // 设置渲染器的像素比例 window.devicePixelRatio 浏览器的像素比例
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // 设置色彩空间，确保 web 呈现和模型一致
+    // renderer.outputEncoding = THREE.sRGBEncoding;
+
+    // renderer.setClearColor(0xcccccc);
+    renderer.physicallyCorrectLights = true;
+
+    renderer.toneMappingExposure = 1;
+
+    this.renderer = renderer;
+  }
+
+  initCamera() {
+    const fov = 0.8 * 180 / Math.PI;
+    const near = 0.01;
+    const far = 1000;
+    const camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, near, far);
+    const { x, y, z } = { x: 1 + 1638 / 2, y: 2 + 1638 / 5, z: 62 + 1638 / 2 };
+    camera.position.set(x, y, z);
+    camera.lookAt(0, 0, 0);
+    this.camera = camera;
+  }
+
+  initControls() {
+    const { camera, renderer } = this;
+    const controls = new OrbitControls(camera, renderer.domElement);
+    // controls.target.set(0, 0.5, 0);
+    controls.update();
+    controls.enablePan = true; // 右键拖拽
+    // controls.enableDamping = true; // damping (阻尼) 缓动效果
+    this.controls = controls;
+  }
+
+  initLight() {
+    const { camera, scene } = this;
+
+    const light1 = new THREE.AmbientLight(0xffffff, 0.3);
+    light1.name = 'ambient_light';
+    light1.layers.enable(0);
+    light1.layers.enable(1);
+    light1.layers.enable(2);
+    scene.add(light1);
+
+    const light2 = new THREE.DirectionalLight(0xFFFFFF, 0.8 * Math.PI);
+    light2.transparent = true;
+    light2.opacity = 0.1;
+    light2.position.set(0.5, 0, 0.866); // ~60º
+    light2.name = 'main_light';
+    camera.add(light2);
+
   }
 
   initMaterial() {
-    this.faceNormalMaterial = new THREE.MeshBasicMaterial({ color: "black" });
 
-    this.darkMaterial = new THREE.MeshPhongMaterial({
+    this.faceNormalMaterial = new THREE.MeshBasicMaterial({ color: 0x269be8 });
+
+    this.buildingActiveMaterial = new THREE.MeshPhongMaterial({
       transparent: 0,
-      color: '#00ffff',
+      color: 'red',
+      opacity: 1,
+    });
+
+    this.buildingNormalMaterial = new THREE.MeshPhongMaterial({
+      transparent: 0,
+      color: 'red',
       opacity: 1
     });
+
+    const color1 = 'red';
+    // const materialNormal1 = new THREE.MeshPhongMaterial({
+    //   color: color1,
+    //   emissive: color1,
+    //   transparent: true,
+    //   opacity: 0.7,
+    //   needsUpdate: true,
+    //   blending: THREE.MultiplyBlending
+    // });
+    // this.materialNormal1 = materialNormal1;
 
   }
 
@@ -122,7 +259,7 @@ class Langyuan3D extends React.Component {
     const { renderScene, renderer } = this;
     const params = {
       exposure: 1,
-      bloomStrength: 1.2,
+      bloomStrength: 1,
       bloomThreshold: 0,
       bloomRadius: 0
     };
@@ -167,6 +304,7 @@ class Langyuan3D extends React.Component {
     // gltf glb
     const gltfLoader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
+    dracoLoader.setCrossOrigin('anonymous');
     dracoLoader.setDecoderPath('three/examples/js/libs/draco');
     gltfLoader.setDRACOLoader(dracoLoader);
     this.gltfLoader = gltfLoader;
@@ -174,16 +312,28 @@ class Langyuan3D extends React.Component {
     // fbx
     const fbxLoader = new FBXLoader();
 
-    this.supportLoader = { gltf: gltfLoader, glb: gltfLoader, fbx: fbxLoader };
+
+    this.textureLoader = new THREE.TextureLoader();
+
+    // obj
+    const objLoader = new OBJLoader2();
+
+    this.supportLoader = {
+      gltf: gltfLoader, glb: gltfLoader,
+      fbx: fbxLoader,
+      obj: objLoader
+    };
 
   }
 
   initEvent() {
-    const { onPointerDown, draw, controls, camera, renderer, bloomComposer, finalComposer } = this;
-
-    controls.addEventListener('change', draw);
+    const { onPointerDown, draw, controls, camera, renderer, vignette, bloomComposer, finalComposer } = this;
 
     window.addEventListener('click', onPointerDown, false);
+
+    // controls.addEventListener('change', () => {
+    //   renderer.render(scene, camera);
+    // });
 
     window.onresize = () => {
 
@@ -192,64 +342,374 @@ class Langyuan3D extends React.Component {
 
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
+      vignette.style({ aspect: camera.aspect });
 
       renderer.setSize(width, height);
 
       bloomComposer.setSize(width, height);
       finalComposer.setSize(width, height);
 
-      this.draw();
-
     };
   }
 
-  loadModel(option) {
-    const { draw, scene, raycasterList, supportLoader } = this;
-    const { url, texture } = option;
+  initGui() {
+    const stats = new Stats();
+    this.stats = stats;
+    this.domWrap.appendChild(stats.dom);
 
-    let loaderType = url.match(/.+\.(.+)/)[1];
+    const gui = new GUI({ width: 450 });
+    let { scene, spotLightHelper1, cameraHelper, camera } = this;
+    var params = {
+      "点光源助手开启": false,
+      "相机助手开启": false,
+      "初始视野角(值大楼小)": 2.5, // fov
+      "离物体最远距离": 75000, // far
+      x: 0,
+      y: 0,
+      z: 0,
+      'r-x': 0
+    };
 
-    if (!loaderType) {
+    gui.addFolder("相机设置（只影响建筑外立面，楼内先不要改）");
+    gui.add(params, "相机助手开启").onChange((val) => {
+      if (val) {
+        scene.add(cameraHelper);
+      } else {
+        scene.remove(cameraHelper);
+      }
+    });
+
+    gui
+      .add(params, "初始视野角(值大楼小)", 0.0, 100)
+      .step(1)
+      .onChange((val) => {
+        this.camera.fov = val;
+        this.camera.updateProjectionMatrix();
+      });
+    gui
+      .add(params, "离物体最远距离", 0.0, 75000 * 5)
+      .step(100)
+      .onChange((val) => {
+        this.camera.far = val;
+        this.camera.updateProjectionMatrix();
+      });
+    gui
+      .add(params, "x", 0.0, 500)
+      .step(1)
+      .onChange((val) => {
+        params.x = val;
+        const { x, y, z } = params;
+        this.camera.position.set(x, y, z);
+        this.camera.updateProjectionMatrix();
+      });
+    gui
+      .add(params, "y", 0.0, 500)
+      .step(1)
+      .onChange((val) => {
+        params.y = val;
+        const { x, y, z } = params;
+        this.camera.position.set(x, y, z);
+        this.camera.updateProjectionMatrix();
+      });
+    gui
+      .add(params, "z", 0.0, 5000)
+      .step(1)
+      .onChange((val) => {
+        params.z = val;
+        const { x, y, z } = params;
+        this.camera.position.set(x, y, z);
+        this.camera.updateProjectionMatrix();
+      });
+    gui
+      .add(params, "r-x", Math.PI * 0, Math.PI * 2)
+      .step(Math.PI / 180 / 100)
+      .onChange((val) => {
+        let newPositon = {
+          x: params.x,
+          y: params.y,
+          z: val,
+        };
+        this.camera.rotateY(val);
+        this.camera.updateProjectionMatrix();
+      });
+
+    const layers = {
+
+      'toggle red': function () {
+
+        camera.layers.toggle(0);
+
+      },
+
+      'toggle green': function () {
+
+        camera.layers.toggle(1);
+
+      },
+
+      'toggle blue': function () {
+
+        camera.layers.toggle(2);
+
+      },
+
+      'enable all': function () {
+
+        camera.layers.enableAll();
+
+      },
+
+      'disable all': function () {
+
+        camera.layers.disableAll();
+
+      }
+
+    };
+
+    //
+    // Init gui
+    gui.add(layers, 'toggle red');
+    gui.add(layers, 'toggle green');
+    gui.add(layers, 'toggle blue');
+    gui.add(layers, 'enable all');
+    gui.add(layers, 'disable all');
+
+  }
+
+  loadBuildingModel(option) {
+    const { scene, group, raycasterList, supportLoader, materialNormal1 } = this;
+    const { url, name, texture, type } = option;
+
+    let loader = supportLoader[type];
+
+    if (!loader) {
       console.error('不支持此模型文件');
       return false;
     }
 
-    let loader = supportLoader[loaderType];
+    loader.load(url, (object) => {
+      const obj = type === 'gltf' ? object.scene : object;
+      obj.traverse((o) => {
+        if (!o.isMesh) return;
+        o.layers.set(0);
+
+        // const lineMaterial = new THREE.LineBasicMaterial({
+        //   // 线的颜色
+        //   color: 0x00ffff,
+        //   transparent: true,
+        //   linewidth: 5,
+        //   opacity: 0.2,
+        //   depthTest: false,
+        // });
+        // //解决z-flighting
+        // lineMaterial.polygonOffset = true;
+        // lineMaterial.depthTest = true;
+        // lineMaterial.polygonOffsetFactor = 1;
+        // lineMaterial.polygonOffsetUnits = 1.0;
+
+        o.geometry.computeTangents();
+
+        // o.material = materialNormal1;
+        o.material.transparent = true;
+        o.material.opacity = 0.9;
+        // o.material.color.setHex(0x3390dd);
+        // o.material.emissive.setHex(0x077bb5);
+        o.material.roughness = 0.1;
+        o.material.metalness = 1;
+        console.log(o.material)
+
+        const wireframe = new THREE.WireframeGeometry(o.geometry);
+        const lineMaterial = new THREE.LineBasicMaterial({
+          // 线的颜色
+          color: 0x00ffff,
+          transparent: true,
+          linewidth: 5,
+          opacity: 1,
+          depthTest: false,
+        });
+        let line = new THREE.LineSegments(wireframe, lineMaterial);
+
+        // o.add(line);
+
+        const edges = new THREE.EdgesGeometry(o.geometry);
+        line = new THREE.Line(edges);
+        line.material.depthTest = false;
+        line.material.opacity = 0.25;
+        line.material.transparent = true;
+        line.position.x = - 4;
+        // o.add(line);
+
+        o.name = name;
+
+        const color = new THREE.Color('#2877d3');
+        // const xx = new THREE.MeshBasicMaterial({
+        //   transparent: true,
+        //   color: 'red',
+        //   opacity: 0.9
+        // });
+        // o.material = xx;
+        // o.material.color = color;
+
+        // o.material.emissive = o.material.color;
+        // o.material.emissiveMap = o.material.map;
+
+        // o.material.opacity = 1;
+        // o.material.normalMap = this.buildTexture;
+        // o.material = buildingNormalMaterial;
+        // o.material.map = this.buildTexture
+        raycasterList.push(o);
+      });
+      scene.add(obj);
+
+    });
+  }
+
+  loadBgModel(option) {
+    const { scene, group, raycasterList, supportLoader } = this;
+    const { url, name, texture, type } = option;
+
+    let loader = supportLoader[type];
+
+    if (!loader) {
+      console.error('不支持此模型文件');
+      return false;
+    }
 
     loader.load(url, (object) => {
       const obj = object.scene;
 
       obj.traverse((o) => {
         if (!o.isMesh) return;
-        const lineMaterial = new THREE.LineBasicMaterial({
-          // 线的颜色
-          color: '#00ffff',
-          transparent: true,
-          linewidth: 1,
-          opacity: 1.0,
-          //depthTest: true,
-        });
-        //解决z-flighting
-        lineMaterial.polygonOffset = true;
-        lineMaterial.depthTest = true;
-        lineMaterial.polygonOffsetFactor = 1;
-        lineMaterial.polygonOffsetUnits = 1.0;
+        o.layers.set(1);
 
-        let edges = new THREE.EdgesGeometry(o.geometry);
-        // edges.scale(1, 1, 1)
-        let lineS = new THREE.LineSegments(edges, lineMaterial);
-        // lineS.rotateY(Math.PI / 4);
-        // lineS.rotateX(Math.PI / 2);
-        o.add(lineS);
-        raycasterList.push(o);
-        o.material.map = texture;
+        o.name = name;
+        if (name === '地板') {
+          o.material.transparent = true;
+          o.material.opacity = 0.5;
+        }
+        this.darkModleList.push(o);
       });
+      if (name === '地板') {
+        this.setContent(obj);
+      }
+      console.log(obj, name)
+      scene.add(obj);
+    });
+  }
 
+  loadFloorModel(option) {
+    const { scene, group, floorList, supportLoader, materialNormal1 } = this;
+    const { url, name, texture, type } = option;
+
+    let loader = supportLoader[type];
+
+    if (!loader) {
+      console.error('不支持此模型文件');
+      return false;
+    }
+
+    loader.load(url, (object) => {
+      const obj = type === 'gltf' ? object.scene : object;
+      obj.traverse((o) => {
+        if (!o.isMesh) return;
+        o.layers.set(2);
+
+        o.material.transparent = true;
+        o.material.opacity = 0.9;
+        // o.material.color.setHex(0x3390dd);
+        // o.material.emissive.setHex(0x077bb5);
+        o.material.roughness = 0.1;
+        o.material.metalness = 1;
+
+        o.name = name;
+
+        const color = new THREE.Color('#2877d3');
+
+      });
+      floorList.push(obj);
       scene.add(obj);
 
-      draw();
+      option.obj = obj;
 
     });
+  }
+
+  loadTexture() {
+    // this.textureLoader.load('/xfy/public/obj/langyuan/矩形1.png', (texture) => {
+    //   texture.encoding = THREE.sRGBEncoding;
+    //   texture.wrapS = THREE.RepeatWrapping;
+    //   texture.wrapT = THREE.RepeatWrapping;
+    //   texture.repeat.set(1, 1);
+    //   this.buildTexture = texture;
+    // });
+  }
+
+  /**
+   * @param {THREE.Object3D} object
+   * @param {Array<THREE.AnimationClip} clips
+   */
+  setContent(object, clips) {
+    // this.clear();
+    return false;
+    const { camera } = this;
+
+    const box = new THREE.Box3().setFromObject(object);
+    const size = box.getSize(new THREE.Vector3()).length();
+    const center = box.getCenter(new THREE.Vector3());
+
+    this.controls.reset();
+
+    object.position.x += (object.position.x - center.x);
+    object.position.y += (object.position.y - center.y);
+    object.position.z += (object.position.z - center.z);
+    this.controls.maxDistance = size * 10;
+    camera.near = size / 100;
+    camera.far = size * 100;
+    camera.updateProjectionMatrix();
+
+    if (this.cameraPosition) {
+
+      camera.position.fromArray(this.options.cameraPosition);
+      camera.lookAt(new THREE.Vector3());
+
+    } else {
+      camera.position.copy(center);
+      camera.position.x += size / 2.0;
+      camera.position.y += size / 5.0;
+      camera.position.z += size / 2.0;
+      camera.lookAt(center);
+
+      console.log('center:', center)
+      console.log('size:', size)
+
+    }
+
+    // this.setCamera(DEFAULT_CAMERA);
+
+    // this.axesCamera.position.copy(camera.position)
+    // this.axesCamera.lookAt(this.axesScene.position)
+    // this.axesCamera.near = size / 100;
+    // this.axesCamera.far = size * 100;
+    // this.axesCamera.updateProjectionMatrix();
+    // this.axesCorner.scale.set(size, size, size);
+
+    // this.controls.saveState();
+
+    // this.scene.add(object);
+
+    // this.setClips(clips);
+
+    // this.updateLights();
+    // this.updateGUI();
+    // this.updateEnvironment();
+    // this.updateTextureEncoding();
+    // this.updateDisplay();
+
+    // window.content = this.content;
+    // console.info('[glTF Viewer] THREE.Scene exported as `window.content`.');
+    // this.printGraph(this.content);
+
   }
 
   onPointerDown(event) {
@@ -261,92 +721,95 @@ class Langyuan3D extends React.Component {
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
-    console.log(raycasterList, mouse, '---raycasterList---')
 
     const intersects = raycaster.intersectObjects(raycasterList);
 
-    console.log(intersects, intersects.length, '---点击啦~');
     if (intersects.length > 0) {
       const object = intersects[0].object;
-      object.layers.toggle(BLOOM_SCENE);
-      draw();
+      console.log(object, '---点击啦---')
+      const color = new THREE.Color('red');
+      const m = object.material;
+      m.color.setHex(0xcd533b);
+      m.emissive.setHex(0xcd533b);
+      this.setContent(this.floorList[0]);
+      this.camera.layers.toggle(FLOOR_SCENE)
     }
 
   }
 
   draw() {
-    console.log('重绘啦~')
-    const { renderer, scene, camera, drawBloom, finalComposer } = this;
-    // renderer.render(scene, camera);
+    requestAnimationFrame(this.draw);
 
-    drawBloom(true);
-    finalComposer.render();
-  }
+    const { drawBloom, finalComposer, stats, renderer, camera, scene } = this;
 
-  drawBloom(mask) {
+    // drawBloom(true);
+    // this.bloomComposer.render();
+    // finalComposer.render();
+    renderer.render(scene, camera);
 
-    const { scene, camera, bloomComposer, restoreMaterial, darkenNonBloomed } = this;
-
-    if (mask === true) {
-      scene.traverse(darkenNonBloomed);
-      bloomComposer.render();
-      scene.traverse(restoreMaterial);
-    } else {
-      camera.layers.set(BLOOM_SCENE);
-      bloomComposer.render();
-      camera.layers.set(ENTIRE_SCENE);
-    }
-
-  }
-
-  darkenNonBloomed(obj) {
-
-    const { bloomLayer, materials, darkMaterial } = this;
-    console.log(bloomLayer.test(obj.layers))
-    if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
-
-      materials[obj.uuid] = obj.material;
-      obj.material = darkMaterial;
-
-    }
-
-  }
-
-  restoreMaterial(obj) {
-
-    const { materials } = this;
-
-    if (materials[obj.uuid]) {
-      console.log('restore 啦~', materials)
-
-      obj.material = this.darkMaterial;
-
-      obj.material = materials[obj.uuid];
-      delete materials[obj.uuid];
-
-    }
-
+    stats && stats.update();
   }
 
   linkSocket() {
+    const { raycasterList } = this;
     const socket = new WebSocket('ws://localhost:8090', 'xf');
     console.log(socket)
     socket.addEventListener('open', function (event) {
       socket.send('3d linked');
     });
     socket.onopen = () => { console.log('open'); };
-    socket.onmessage = (event) => { console.log('socket: ', event.data); };
+    socket.onmessage = (event) => {
+      console.log('socket: ', event.data);
+      console.log(raycasterList)
+    };
   }
 
   componentDidMount() {
     this.init();
+    this.draw();
+    this.initGui();
 
-    const loader = new THREE.TextureLoader();
+    this.loadTexture();
 
-    loader.load('/static/img/doge.jpeg', texture => {
-      const url = '/static/modle/test.gltf'
-      this.loadModel({ url, texture });
-    })
+    // this.textureLoader.load('/xfy/public/obj/langyuan/建筑物-纹理.png', (texture) => {
+    //   texture.encoding = THREE.sRGBEncoding;
+    //   texture.wrapS = THREE.RepeatWrapping;
+    //   texture.wrapT = THREE.RepeatWrapping;
+    //   texture.repeat.set(1, 1);
+
+
+
+    // })
+
+    bgModelList.forEach(s => {
+      let type = s.type ? s.type : 'gltf';
+      s.url = `/xfy/public/obj/langyuan/${s.name}.${type}`;
+      s.type = type;
+      this.loadBgModel(s);
+    });
+
+    modelList.forEach(s => {
+      let type = s.type ? s.type : 'gltf';
+      s.url = `/xfy/public/obj/langyuan/${s.name}.${type}`;
+      s.type = type;
+      this.loadBuildingModel(s);
+    });
+
+    floorModelList.forEach(s => {
+      let type = s.type ? s.type : 'gltf';
+      s.url = `/xfy/public/obj/langyuan/floor/${s.name}.${type}`;
+      s.type = type;
+      this.loadFloorModel(s);
+
+    });
+
+    this.camera.layers.disableAll();
+
+    setTimeout(() => {
+      this.camera.layers.toggle(2);
+      console.log('show----------------------', this.camera)
+    }, 3000);
+
 
     this.linkSocket();
   }
