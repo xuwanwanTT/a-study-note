@@ -50,7 +50,7 @@ const FLOOR_SCENE = 2;
 
 const modelList = [
   { name: '1号楼' },
-  { name: '2号楼' },
+  { name: '隐藏' },
   { name: '3号楼' },
   { name: '3号楼d' },
   { name: '5号楼' },
@@ -81,6 +81,10 @@ const floorModelList = [
   { name: '2-2' }
 ];
 
+const alarmDist = {
+  '2号楼': [{ name: '2号楼-报警层' }, { name: '2号楼-报警夹层' }]
+};
+
 class Langyuan3D extends React.Component {
   constructor() {
     super();
@@ -98,8 +102,12 @@ class Langyuan3D extends React.Component {
     this.loadBuildingModel = this.loadBuildingModel.bind(this);
     this.loadBgModel = this.loadBgModel.bind(this);
 
-    this.group = new THREE.Group();
+    this.backMainCamera = this.backMainCamera.bind(this);
+
     this.floorList = [];
+
+    this.tick = 0;
+    this.tok = 30; // 报警闪烁频率间隔 30表示30帧 即 1/60*30 = 0.5s
   }
 
   init() {
@@ -126,7 +134,7 @@ class Langyuan3D extends React.Component {
     this.vignette = createBackground({
       aspect: camera.aspect,
       grainScale: 0.001, // mattdesl/three-vignette-background#1
-      colors: [0x000000, 0x000000]
+      colors: [0x000000, 0x0000000]
     });
     this.vignette.name = 'Vignette';
     this.vignette.renderOrder = -1;
@@ -154,6 +162,7 @@ class Langyuan3D extends React.Component {
     this.raycaster = new THREE.Raycaster();
     this.raycasterList = []; // 允许点击的物体
     this.darkModleList = [];
+    this.alarmList = [] // 报警的平层
 
     this.mouse = new THREE.Vector2();
 
@@ -183,16 +192,34 @@ class Langyuan3D extends React.Component {
 
     renderer.toneMappingExposure = 1;
 
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
     this.renderer = renderer;
   }
 
   initCamera() {
-    const fov = 0.8 * 180 / Math.PI;
-    const near = 0.01;
-    const far = 1000;
+    const defaultCameraOption = {
+      position: {
+        x: -138.82116928960033,
+        y: 118.22094728609966,
+        z: 351.27854548130074,
+      },
+      rotation: {
+        _x: -0.3847749811487621,
+        _y: -0.5798434927102718,
+        _z: -0.21833784872882453,
+      },
+      fov: 45.83662361046586,
+      near: 16.38915786065848,
+      far: 163891.57860658478
+    };
+    const { position, rotation, fov, near, far } = defaultCameraOption;
     const camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, near, far);
-    const { x, y, z } = { x: 1 + 1638 / 2, y: 2 + 1638 / 5, z: 62 + 1638 / 2 };
+    const { x, y, z } = position;
     camera.position.set(x, y, z);
+    const { _x, _y, _z } = rotation;
+    camera.rotation.set(_x, _y, _z);
     camera.lookAt(0, 0, 0);
     this.camera = camera;
   }
@@ -494,6 +521,11 @@ class Langyuan3D extends React.Component {
         if (!o.isMesh) return;
         o.layers.set(0);
 
+        if (o.parent.name === '空白') {
+          o.material = o.material.clone();
+          o.material.visible = false;
+        }
+
         // const lineMaterial = new THREE.LineBasicMaterial({
         //   // 线的颜色
         //   color: 0x00ffff,
@@ -517,7 +549,6 @@ class Langyuan3D extends React.Component {
         // o.material.emissive.setHex(0x077bb5);
         o.material.roughness = 0.1;
         o.material.metalness = 1;
-        console.log(o.material)
 
         const wireframe = new THREE.WireframeGeometry(o.geometry);
         const lineMaterial = new THREE.LineBasicMaterial({
@@ -558,10 +589,11 @@ class Langyuan3D extends React.Component {
         // o.material.normalMap = this.buildTexture;
         // o.material = buildingNormalMaterial;
         // o.material.map = this.buildTexture
-        raycasterList.push(o);
+        // raycasterList.push(o);
       });
       scene.add(obj);
-
+      option.obj = obj;
+      if (name === '隐藏') { console.log(obj) }
     });
   }
 
@@ -581,19 +613,20 @@ class Langyuan3D extends React.Component {
 
       obj.traverse((o) => {
         if (!o.isMesh) return;
-        o.layers.set(1);
+        o.layers.set(0);
 
         o.name = name;
         if (name === '地板') {
           o.material.transparent = true;
-          o.material.opacity = 0.5;
+          o.material.depthWrite = false;
+          o.material.opacity = 0.9;
+          o.material.side = THREE.DoubleSide;
         }
         this.darkModleList.push(o);
       });
       if (name === '地板') {
-        this.setContent(obj);
+        // this.setContent(obj);
       }
-      console.log(obj, name)
       scene.add(obj);
     });
   }
@@ -635,6 +668,38 @@ class Langyuan3D extends React.Component {
     });
   }
 
+  loadAlarmModel(option) {
+    const { scene, group, floorList, supportLoader, materialNormal1 } = this;
+    const { url, name, texture, type } = option;
+
+    let loader = supportLoader[type];
+
+    if (!loader) {
+      console.error('不支持此模型文件');
+      return false;
+    }
+
+    loader.load(url, (object) => {
+      const obj = type === 'gltf' ? object.scene : object;
+      obj.traverse((o) => {
+        if (!o.isMesh) return;
+
+        o.material.transparent = true;
+        o.material.opacity = 0.9;
+        // o.material.color.setHex(0x3390dd);
+        // o.material.emissive.setHex(0x077bb5);
+        o.material.roughness = 0.1;
+        o.material.metalness = 1;
+
+        o.name = name;
+
+      });
+
+      option.obj = obj;
+
+    });
+  }
+
   loadTexture() {
     // this.textureLoader.load('/xfy/public/obj/langyuan/矩形1.png', (texture) => {
     //   texture.encoding = THREE.sRGBEncoding;
@@ -651,38 +716,35 @@ class Langyuan3D extends React.Component {
    */
   setContent(object, clips) {
     // this.clear();
-    return false;
-    const { camera } = this;
+    const { camera, controls } = this;
 
     const box = new THREE.Box3().setFromObject(object);
     const size = box.getSize(new THREE.Vector3()).length();
     const center = box.getCenter(new THREE.Vector3());
 
-    this.controls.reset();
-
     object.position.x += (object.position.x - center.x);
     object.position.y += (object.position.y - center.y);
     object.position.z += (object.position.z - center.z);
-    this.controls.maxDistance = size * 10;
+
+    controls.reset();
+
+    // controls.maxDistance = size * 10;
     camera.near = size / 100;
     camera.far = size * 100;
     camera.updateProjectionMatrix();
 
     if (this.cameraPosition) {
 
-      camera.position.fromArray(this.options.cameraPosition);
+      camera.position.fromArray(this.cameraPosition);
       camera.lookAt(new THREE.Vector3());
 
     } else {
-      camera.position.copy(center);
+      // camera.position.copy(center);
       camera.position.x += size / 2.0;
       camera.position.y += size / 5.0;
       camera.position.z += size / 2.0;
       camera.lookAt(center);
-
-      console.log('center:', center)
-      console.log('size:', size)
-
+      camera.updateProjectionMatrix();
     }
 
     // this.setCamera(DEFAULT_CAMERA);
@@ -695,8 +757,6 @@ class Langyuan3D extends React.Component {
     // this.axesCorner.scale.set(size, size, size);
 
     // this.controls.saveState();
-
-    // this.scene.add(object);
 
     // this.setClips(clips);
 
@@ -723,16 +783,17 @@ class Langyuan3D extends React.Component {
     raycaster.setFromCamera(mouse, camera);
 
     const intersects = raycaster.intersectObjects(raycasterList);
+    console.log('点击', raycasterList, intersects, (camera))
 
     if (intersects.length > 0) {
       const object = intersects[0].object;
-      console.log(object, '---点击啦---')
-      const color = new THREE.Color('red');
-      const m = object.material;
-      m.color.setHex(0xcd533b);
-      m.emissive.setHex(0xcd533b);
-      this.setContent(this.floorList[0]);
-      this.camera.layers.toggle(FLOOR_SCENE)
+      console.log(object, '---点击啦---');
+      if (this.camera.layers.test(object.layers) && object.realClick) {
+        console.log('change');
+        this.camera.layers.disableAll();
+        this.camera.layers.toggle(FLOOR_SCENE);
+        this.setContent(this.floorList[0]);
+      }
     }
 
   }
@@ -740,13 +801,23 @@ class Langyuan3D extends React.Component {
   draw() {
     requestAnimationFrame(this.draw);
 
-    const { drawBloom, finalComposer, stats, renderer, camera, scene } = this;
+    const { stats, renderer, camera, scene, alarmList, tok } = this;
+    this.tick++;
 
     // drawBloom(true);
     // this.bloomComposer.render();
     // finalComposer.render();
     renderer.render(scene, camera);
 
+    // 报警闪烁动画
+    if (this.tick > tok) {
+      this.tick = 0;
+      alarmList.forEach(s => {
+        s.material.opacity = s.material.opacity === 0.5 ? 1 : 0.5;
+      });
+    }
+
+    // 指示器
     stats && stats.update();
   }
 
@@ -764,22 +835,80 @@ class Langyuan3D extends React.Component {
     };
   }
 
+  backMainCamera() {
+    const { camera } = this;
+    camera.layers.enableAll();
+    camera.layers.disable(2);
+  }
+
+  mock() {
+    setTimeout(() => {
+      this.setState({
+        data: [
+          {
+            building: '2号楼',
+            floor: 8,
+            status: 2,
+          },
+          {
+            building: '2号楼',
+            floor: 4,
+            status: 2,
+          },
+          {
+            building: '2号楼',
+            floor: 1,
+            status: 2,
+          },
+          {
+            building: '2号楼',
+            floor: 5,
+            status: 2,
+          }
+        ]
+      }, () => {
+
+        const { raycasterList, alarmList } = this;
+
+        this.state.data.forEach(data => {
+          const { building, floor, status } = data;
+          const buildingObj = modelList.filter(s => s.name === '隐藏')[0].obj;
+          buildingObj.traverse(o => {
+            if (o.isMesh) {
+              if (+o.userData.name === +floor) {
+                console.log(o, '---o---')
+                if (!alarmList.some(s => s === o) && +status === 2) { // 报警
+                  raycasterList.push(o);
+                  alarmList.push(o);
+                  o.material.visible = true;
+                  o.realClick = true;
+                } else if (+status === 8) { // 恢复
+                  // 先隐藏
+                  o.material.visible = false;
+
+                  // 然后从数组中移除
+                  let index = alarmList.indexOf(o);
+                  alarmList.splice(index, 1);
+                  raycasterList.splice(index, 1);
+                }
+              }
+            }
+          });
+        })
+
+      });
+    }, 1000 * 5);
+  }
+
   componentDidMount() {
     this.init();
     this.draw();
     this.initGui();
+    const bloomLayer = new THREE.Layers();
+    bloomLayer.set(0);
+    this.bloomLayer = bloomLayer;
 
     this.loadTexture();
-
-    // this.textureLoader.load('/xfy/public/obj/langyuan/建筑物-纹理.png', (texture) => {
-    //   texture.encoding = THREE.sRGBEncoding;
-    //   texture.wrapS = THREE.RepeatWrapping;
-    //   texture.wrapT = THREE.RepeatWrapping;
-    //   texture.repeat.set(1, 1);
-
-
-
-    // })
 
     bgModelList.forEach(s => {
       let type = s.type ? s.type : 'gltf';
@@ -800,18 +929,21 @@ class Langyuan3D extends React.Component {
       s.url = `/xfy/public/obj/langyuan/floor/${s.name}.${type}`;
       s.type = type;
       this.loadFloorModel(s);
-
     });
 
-    this.camera.layers.disableAll();
-
-    setTimeout(() => {
-      this.camera.layers.toggle(2);
-      console.log('show----------------------', this.camera)
-    }, 3000);
-
+    for (let n in alarmDist) {
+      let arr = alarmDist[n];
+      arr.forEach(s => {
+        let type = s.type ? s.type : 'gltf';
+        s.url = `/xfy/public/obj/langyuan/${s.name}.${type}`;
+        s.type = type;
+        this.loadAlarmModel(s);
+      })
+    }
 
     this.linkSocket();
+
+    this.mock();
   }
 
   render() {
@@ -819,6 +951,14 @@ class Langyuan3D extends React.Component {
       <>
 
         <div ref={refs => this.domWrap = refs} />
+
+        <div style={{
+          color: 'red',
+          fontSize: 32,
+          position: 'absolute',
+          left: '50%',
+          top: 0,
+        }} onClick={this.backMainCamera}>back</div>
 
       </>
     );
