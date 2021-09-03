@@ -5,7 +5,7 @@ import { RouterList } from './page/RouterConfig.js';
 
 function App() {
   return (
-    <Suspense fallback={<div>loading...</div>}>
+    <Suspense fallback={<div>等着吧你...</div>}>
       <Switch>
         {
           RouterList.map((s, i) => {
