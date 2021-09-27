@@ -21,8 +21,8 @@ const changeDist = {
   "11号楼": "build11",
   "12号楼": "build12",
   "15号楼": "build15",
-  "16号馆": "build16",
-  "17号馆": "build17",
+  "16号楼": "build16",
+  "17号楼": "build17",
   "18号楼": "build18",
   "19号楼": "build19",
   "20号楼": "build20",
@@ -32,13 +32,16 @@ const changeDist = {
 
 function changeGltf(fileName) {
   const filePath = path.join(inputFolder, fileName);
-  const name = fileName.split('.')[0];
-  const changeName = changeDist[name];
+  const nameArr = fileName.split('.')[0].split('-');
+  const name = nameArr[0];
+  const name1 = nameArr[1];
+  const changeName = changeDist[name] + '-' + name1;
   const outFilePath = path.join(outFolder, changeName + '.gltf');
 
   let byte = fs.readFileSync(filePath).toString();
-  const reg = new RegExp(`"name":"${name}"`);
-  byte.replace(reg, `"name":"${changeName}"`);
+  const json = JSON.parse(byte);
+  json.nodes[0].name = changeName;
+  let content = JSON.stringify(json);
   fs.writeFileSync(outFilePath, content);
 };
 
