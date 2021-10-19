@@ -249,6 +249,15 @@ class ThreeScene3 extends React.Component {
       texture.wrapT = THREE.RepeatWrapping;
       texture.repeat.set(1, 1);
       textureDist.build = texture;
+
+      const geometry = new THREE.BoxGeometry(50, 50, 50);
+      const material = new THREE.MeshStandardMaterial({ color: 0x69c3fd });
+      // material.emissiveMap = textureDist.build;
+      // material.map = textureDist.build
+      material.emissive = new THREE.Color(0x69c3fd)
+      console.log(material, '--material--');
+      const cube = new THREE.Mesh(geometry, material);
+      scene.add(cube);
     });
 
     gltfLoader.load('/static/modle/build2.gltf', object => {
@@ -305,6 +314,7 @@ class ThreeScene3 extends React.Component {
       });
       scene.add(obj);
     });
+
   }
 
   render() {
