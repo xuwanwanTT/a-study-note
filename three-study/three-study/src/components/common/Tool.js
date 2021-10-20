@@ -38,6 +38,23 @@ const toScreenPosition = (obj, camera) => {
 
 };
 
+export const ringCircle = () => {
+  const geometry = new THREE.RingBufferGeometry(0.1, 0.5, 20);
+  const material = new THREE.MeshPhysicalMaterial({
+    color: "#ad2317",
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.7
+  });
+
+  const obj = new THREE.Mesh(geometry, material);
+
+  obj.rotation.x = Math.PI / 2;
+  obj.position.y = 1;
+  obj.isAlarm = true; //表示是报警
+  return obj;
+}
+
 
 export {
   countSite,

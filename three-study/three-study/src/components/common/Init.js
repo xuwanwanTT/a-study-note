@@ -12,14 +12,14 @@ const initRenderer = () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 
   // 设置色彩空间，确保 web 呈现和模型一致
-  renderer.outputEncoding = THREE.sRGBEncoding;
+  // renderer.outputEncoding = THREE.sRGBEncoding;
   // renderer.gammaOutput = false;
 
   // // renderer.setClearColor(0xcccccc);
-  renderer.physicallyCorrectLights = true;
+  // renderer.physicallyCorrectLights = true;
 
-  renderer.toneMapping = THREE.CineonToneMapping;
-  renderer.toneMappingExposure = 1;
+  // renderer.toneMapping = THREE.CineonToneMapping;
+  // renderer.toneMappingExposure = 1;
 
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.BasicShadowMap;
@@ -30,7 +30,6 @@ const initRenderer = () => {
 const initCamera = (option = {}) => {
   const { position = { x: 0, y: 0, z: 0 }, fov = 75, near = 0.01, far = 7500 } = option;
   const camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, near, far);
-
   const { x, y, z } = position;
   camera.position.set(x, y, z);
 
@@ -49,7 +48,7 @@ const initScene = (option = {}) => {
 const initLight = () => {
   const light = {};
 
-  const ambiLight = new THREE.AmbientLight('#fff', 0.65);
+  const ambiLight = new THREE.AmbientLight('#fff', 1);
   ambiLight.name = 'ambient_light';
   ambiLight.layers.enable(0);
   ambiLight.layers.enable(1);
@@ -81,11 +80,11 @@ const initControls = (renderer, camera, option = {
   enableDamping: false // damping (阻尼) 缓动效果
 }) => {
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(
-    90.96655011954165,
-    1.2312659286837143e-15,
-    48.967619727049524,
-  );
+  // controls.target.set(
+  //   90.96655011954165,
+  //   1.2312659286837143e-15,
+  //   48.967619727049524,
+  // );
   controls.enablePan = option.enablePan;
   controls.enableDamping = option.enableDamping;
 

@@ -7,6 +7,7 @@ import {
   initControls,
   initLoader
 } from '../../components/common/Init.js';
+import { ringCircle } from '../../components/common/Tool.js';
 import * as THREE from 'three';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 
@@ -78,7 +79,7 @@ class ThreeScene3 extends React.Component {
 
     this.scene.add(this.camera);
     this.scene.add(ambiLight);
-    this.camera.add(directLight);
+    // this.camera.add(directLight);
     // this.camera.add(pointLight);
 
     this.raycaster = new THREE.Raycaster();
@@ -98,10 +99,10 @@ class ThreeScene3 extends React.Component {
 
     // window.addEventListener('mousemove', onMousemove, false);
 
-    controls.addEventListener('change', () => {
-      renderer.render(scene, camera);
-      // this.renderPanel();
-    });
+    // controls.addEventListener('change', () => {
+    //   renderer.render(scene, camera);
+    //   // this.renderPanel();
+    // });
 
     window.onresize = () => {
 
@@ -110,7 +111,7 @@ class ThreeScene3 extends React.Component {
 
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
-      vignette.style({ aspect: camera.aspect });
+      // vignette.style({ aspect: camera.aspect });
 
       renderer.setSize(width, height);
 
@@ -201,7 +202,7 @@ class ThreeScene3 extends React.Component {
         }
       });
     }
-
+    this.controls.update();
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -215,8 +216,8 @@ class ThreeScene3 extends React.Component {
     const { scene, gltfLoader, textureLoader, renderer } = this;
 
     let radianceMap = null;
-    // const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    // pmremGenerator.compileEquirectangularShader();
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
 
     new RGBELoader()
       .setDataType(THREE.UnsignedByteType)
@@ -224,10 +225,10 @@ class ThreeScene3 extends React.Component {
       // .setPath('textures/equirectangular/')
       .load('/static/texture/equirectangular/venice_sunset_1k.hdr', function (texture) {
 
-        // radianceMap = pmremGenerator.fromEquirectangular(texture).texture;
-        // pmremGenerator.dispose();
+        radianceMap = pmremGenerator.fromEquirectangular(texture).texture;
+        pmremGenerator.dispose();
 
-        // scene.environment = radianceMap;
+        scene.environment = radianceMap;
 
       });
 
@@ -235,32 +236,27 @@ class ThreeScene3 extends React.Component {
       fire: new THREE.Texture()
     };
 
-    textureLoader.load('/static/modle/color-fire.png', texture => {
-      texture.encoding = THREE.sRGBEncoding;
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(1, 1);
-      textureDist.fire = texture;
+    // textureLoader.load('/static/modle/color-fire.png', texture => {
+    //   texture.encoding = THREE.sRGBEncoding;
+    //   texture.wrapS = THREE.RepeatWrapping;
+    //   texture.wrapT = THREE.RepeatWrapping;
+    //   texture.repeat.set(1, 1);
+    //   textureDist.fire = texture;
+    // });
+
+    textureDist.fire = textureLoader.load('/static/modle/color-fire.png');
+    textureDist.build = textureLoader.load('/static/modle/color1.png');
+
+    const material = new THREE.MeshStandardMaterial({
+      map: textureDist.build
     });
 
-    textureLoader.load('/static/modle/color1.png', texture => {
-      texture.encoding = THREE.sRGBEncoding;
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(1, 1);
-      textureDist.build = texture;
-
-      const geometry = new THREE.BoxGeometry(50, 50, 50);
-      const material = new THREE.MeshStandardMaterial({ color: 0x69c3fd });
-      // material.emissiveMap = textureDist.build;
-      // material.map = textureDist.build
-      material.emissive = new THREE.Color(0x69c3fd)
-      console.log(material, '--material--');
-      const cube = new THREE.Mesh(geometry, material);
-      scene.add(cube);
+    const materialFire = new THREE.MeshStandardMaterial({
+      map: textureDist.fire,
+      transparent: true
     });
 
-    gltfLoader.load('/static/modle/build2.gltf', object => {
+    gltfLoader.load('/static/modle/build2-o.gltf', object => {
       const obj = object.scene;
       console.log(object, obj);
       obj.traverse(o => {
@@ -268,24 +264,30 @@ class ThreeScene3 extends React.Component {
           o.material.transparent = true;
           switch (o.parent.name) {
             case 'build':
-              // o.material.opacity = 0.9;
-              o.material.color.set('#fff');
-              o.material.emissive.set('#fff');
-              o.material.map = textureDist.build;
-              o.material.emissiveMap = textureDist.build;
+              // const material = new THREE.MeshStandardMaterial({
+              //   // map: textureDist.build
+              //   color: '#fff'
+              // });
+              o.material = material.clone();
+              o.material.opacity = 0.9;
+              // o.material.color.set('#fff');
+              // o.material.emissive.set('#fff');
+              // o.material.map = textureDist.build;
+              // o.material.emissiveMap = textureDist.build;
               o.material.metalness = 0.1;
               o.material.roughness = 0.9;
 
+              console.log(o, '---build---')
               o.realClick = 'building';
 
               this.raycasterList.push(o);
               break;
             case 'fire':
-              o.material = o.material.clone();
-              o.material.color = new THREE.Color('#fff');
-              o.material.emissive = new THREE.Color('#fff');
-              o.material.map = textureDist.fire;
-              o.material.emissiveMap = textureDist.fire;
+              o.material = materialFire.clone();
+              // o.material.color = new THREE.Color('#fff');
+              // o.material.emissive = new THREE.Color('#fff');
+              // o.material.map = textureDist.fire;
+              // o.material.emissiveMap = textureDist.fire;
               o.material.metalness = 0.1;
               o.material.roughness = 0.9;
               o.material.visible = false;
