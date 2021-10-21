@@ -21,8 +21,8 @@ const initRenderer = () => {
   // renderer.toneMapping = THREE.CineonToneMapping;
   // renderer.toneMappingExposure = 1;
 
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.BasicShadowMap;
+  // renderer.shadowMap.enabled = true;
+  // renderer.shadowMap.type = THREE.BasicShadowMap;
 
   return renderer;
 }
@@ -48,7 +48,7 @@ const initScene = (option = {}) => {
 const initLight = () => {
   const light = {};
 
-  const ambiLight = new THREE.AmbientLight('#fff', 1);
+  const ambiLight = new THREE.AmbientLight('#fff', 0.65);
   ambiLight.name = 'ambient_light';
   ambiLight.layers.enable(0);
   ambiLight.layers.enable(1);
@@ -62,6 +62,7 @@ const initLight = () => {
   // directLight.intensity = 4;
   directLight.position.set(0.5, 10, 0.866); // ~60º
   directLight.name = 'main_light';
+  // directLight.castShadow = true;
   light.directLight = directLight;
 
   // const pointLight = new THREE.PointLight(0xffffff, 0.8);

@@ -14,24 +14,24 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 const tok = 30;
 
 let modelList = [
-  { name: '1号楼' },
-  { name: '2号楼' },
-  { name: '3号楼' },
-  { name: '5号楼' },
-  { name: '6号楼' },
-  { name: '7号楼' },
-  { name: '8号楼' },
-  { name: '9号楼' },
-  { name: '10号楼' },
-  { name: '11号楼' },
-  { name: '15号楼' },
-  { name: '16号楼' },
-  { name: '17号楼' },
-  { name: '18号楼' },
-  { name: '18c号楼' },
-  { name: '19号楼' },
-  { name: '20号楼' },
-  { name: '21号楼' },
+  { name: '1build' },
+  { name: '2build' },
+  { name: '3build' },
+  { name: '5build' },
+  { name: '6build' },
+  { name: '7build' },
+  { name: '8build' },
+  { name: '9build' },
+  { name: '10build' },
+  { name: '11build' },
+  { name: '15build' },
+  { name: '16build' },
+  { name: '17build' },
+  { name: '18build' },
+  { name: '18cbuild' },
+  { name: '19build' },
+  { name: '20build' },
+  { name: '21build' },
 ];
 
 const bgModelList = [
@@ -39,6 +39,25 @@ const bgModelList = [
   { name: 'bg_road' },
   { name: 'bg_build' },
 ];
+
+const initCircle = (obj) => {
+  let ring = ringCircle();
+
+  ring.position.x = obj.position.x;
+  ring.position.z = obj.position.z;
+  ring.position.y = -0.5;
+  ring.scale.x *= 2;
+  ring.scale.y *= 2;
+  ring.scale.z *= 2;
+  ring.name = 'signal-circle';
+  ring.traverse(o => {
+    if (o.isMesh) {
+      o.material.visible = true;
+    }
+  });
+  obj.add(ring);
+  return ring;
+}
 
 class ThreeScene3 extends React.Component {
   constructor() {
@@ -79,7 +98,7 @@ class ThreeScene3 extends React.Component {
 
     this.scene.add(this.camera);
     this.scene.add(ambiLight);
-    // this.camera.add(directLight);
+    this.camera.add(directLight);
     // this.camera.add(pointLight);
 
     this.raycaster = new THREE.Raycaster();
@@ -202,6 +221,17 @@ class ThreeScene3 extends React.Component {
         }
       });
     }
+    if (this.xx) {
+      this.xx.scale.x += 0.1;
+      this.xx.scale.y += 0.1;
+      this.xx.material.opacity -= 1 / (6 / 0.15);
+      if (this.xx.scale.x > 8) {
+        this.xx.scale.x = 2;
+        this.xx.scale.y = 2;
+        this.xx.material.opacity = 1;
+      }
+    }
+
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
   }
@@ -223,12 +253,12 @@ class ThreeScene3 extends React.Component {
       .setDataType(THREE.UnsignedByteType)
       // .setDataType( THREE.FloatType )
       // .setPath('textures/equirectangular/')
-      .load('/static/texture/equirectangular/venice_sunset_1k.hdr', function (texture) {
+      .load('/static/texture/equirectangular/pedestrian_overpass_1k.hdr', function (texture) {
 
         radianceMap = pmremGenerator.fromEquirectangular(texture).texture;
         pmremGenerator.dispose();
 
-        scene.environment = radianceMap;
+        // scene.environment = radianceMap;
 
       });
 
@@ -245,16 +275,103 @@ class ThreeScene3 extends React.Component {
     // });
 
     textureDist.fire = textureLoader.load('/static/modle/color-fire.png');
-    textureDist.build = textureLoader.load('/static/modle/color1.png');
+    textureDist.build = textureLoader.load('/static/modle/color0.png');
 
     const material = new THREE.MeshStandardMaterial({
-      map: textureDist.build
+      map: textureDist.build,
+      emissiveMap: textureDist.build,
+      emissiveIntensity: 0.1,
+      emissive: new THREE.Color('#5285fb'),
+      transparent: true,
+      opacity: 0.9
     });
+
+    console.log(material, '-------------------------------')
 
     const materialFire = new THREE.MeshStandardMaterial({
       map: textureDist.fire,
       transparent: true
     });
+
+    [
+      // { name: 'build1' },
+      // { name: 'build2' },
+      { name: 'build3' },
+      // { name: 'build4' },
+      // { name: 'build5' },
+      // { name: 'build6' },
+      // { name: 'build7' },
+      // { name: 'build8' },
+      // { name: 'build9' },
+      // { name: 'build10' },
+      // { name: 'build11' },
+      // { name: 'build12' },
+      // { name: 'build15' },
+      // { name: 'build16' },
+      // { name: 'build16p' },
+      // { name: 'build18' },
+      // { name: 'build20' },
+      // { name: 'build21' },
+    ].map(s => {
+      gltfLoader.load(`/static/modle/${s.name}.gltf`, object => {
+        const obj = object.scene;
+        console.log(object, obj);
+        obj.traverse(o => {
+          if (o.isMesh) {
+            o.material.transparent = true;
+            switch (o.parent.name) {
+              case 'build':
+                // const material = new THREE.MeshStandardMaterial({
+                //   // map: textureDist.build
+                //   color: '#fff'
+                // });
+                const newMaterial = material.clone();
+                newMaterial.metalness = 0.1;
+                newMaterial.roughness = 0.9;
+                o.material = newMaterial;
+
+                console.log(o, `---${s.name}---`)
+                o.realClick = 'building';
+
+                this.raycasterList.push(o);
+                break;
+              case 'fire':
+                o.material = materialFire.clone();
+                // o.material.color = new THREE.Color('#fff');
+                // o.material.emissive = new THREE.Color('#fff');
+                // o.material.map = textureDist.fire;
+                // o.material.emissiveMap = textureDist.fire;
+                o.material.metalness = 0.1;
+                o.material.roughness = 0.9;
+                o.material.visible = false;
+                o.realClick = 'floor';
+                o.shadowSide = THREE.BackSide;
+
+                if (+o.name === 300) {
+                  o.material.visible = true;
+                  this.fireList.push(o);
+                  this.raycasterList.push(o);
+                }
+                break;
+              case 'mark':
+                // console.log('mark: ', o)
+                if (o.userData.name === 'fire-mark') {
+                  o.material = o.material.clone();
+                  o.material.visible = false;
+                  o.realClick = 'mark';
+                }
+                break;
+              default:
+                console.error('未按规则分组命名模型, 无法识别QAQ', o);
+                break;
+            }
+          }
+        });
+        this.xx = initCircle(obj);
+
+        scene.add(obj);
+      });
+    })
 
     gltfLoader.load('/static/modle/build2-o.gltf', object => {
       const obj = object.scene;
