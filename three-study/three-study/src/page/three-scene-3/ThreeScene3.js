@@ -7,7 +7,7 @@ import {
   initControls,
   initLoader
 } from '../../components/common/Init.js';
-import { ringCircle } from '../../components/common/Tool.js';
+import { setContent, ringCircle, pyramid } from '../../components/common/Tool.js';
 import * as THREE from 'three';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 
@@ -43,12 +43,12 @@ const bgModelList = [
 const initCircle = (obj) => {
   let ring = ringCircle();
 
-  ring.position.x = obj.position.x;
-  ring.position.z = obj.position.z;
-  ring.position.y = -0.5;
-  ring.scale.x *= 2;
-  ring.scale.y *= 2;
-  ring.scale.z *= 2;
+  ring.position.x = 0;
+  ring.position.z = 0;
+  ring.position.y = 400;
+  ring.scale.x *= 254;
+  ring.scale.y *= 254;
+  ring.scale.z *= 254;
   ring.name = 'signal-circle';
   ring.traverse(o => {
     if (o.isMesh) {
@@ -57,6 +57,19 @@ const initCircle = (obj) => {
   });
   obj.add(ring);
   return ring;
+}
+
+const initPyramid = (obj) => {
+  let ring = pyramid();
+
+  ring.name = 'signal-pyramid';
+  ring.position.x = obj.position.x;
+  ring.position.z = obj.position.z;
+  ring.traverse(o => {
+    if (o.isMesh) {
+    }
+  });
+  obj.add(ring);
 }
 
 class ThreeScene3 extends React.Component {
@@ -222,10 +235,11 @@ class ThreeScene3 extends React.Component {
       });
     }
     if (this.xx) {
-      this.xx.scale.x += 0.1;
-      this.xx.scale.y += 0.1;
-      this.xx.material.opacity -= 1 / (6 / 0.15);
-      if (this.xx.scale.x > 8) {
+      this.xx.scale.x += 1;
+      this.xx.scale.y += 1;
+      this.xx.material.opacity -= 1 / (300);
+      console.log(this.xx.material.opacity)
+      if (this.xx.scale.x > 300) {
         this.xx.scale.x = 2;
         this.xx.scale.y = 2;
         this.xx.material.opacity = 1;
@@ -243,7 +257,7 @@ class ThreeScene3 extends React.Component {
     this.initEvent();
     this.draw();
 
-    const { scene, gltfLoader, textureLoader, renderer } = this;
+    const { scene, camera, controls, gltfLoader, textureLoader, renderer } = this;
 
     let radianceMap = null;
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
@@ -296,7 +310,7 @@ class ThreeScene3 extends React.Component {
     [
       // { name: 'build1' },
       // { name: 'build2' },
-      { name: 'build3' },
+      // { name: 'build3' },
       // { name: 'build4' },
       // { name: 'build5' },
       // { name: 'build6' },
@@ -312,23 +326,26 @@ class ThreeScene3 extends React.Component {
       // { name: 'build18' },
       // { name: 'build20' },
       // { name: 'build21' },
+      { name: 'build1-100' }
     ].map(s => {
-      gltfLoader.load(`/static/modle/${s.name}.gltf`, object => {
+      gltfLoader.load(`/static/modle/floor/${s.name}.gltf`, object => {
         const obj = object.scene;
         console.log(object, obj);
         obj.traverse(o => {
           if (o.isMesh) {
             o.material.transparent = true;
+
             switch (o.parent.name) {
               case 'build':
                 // const material = new THREE.MeshStandardMaterial({
                 //   // map: textureDist.build
                 //   color: '#fff'
                 // });
-                const newMaterial = material.clone();
-                newMaterial.metalness = 0.1;
-                newMaterial.roughness = 0.9;
-                o.material = newMaterial;
+                const buildMaterial = material.clone();
+                buildMaterial.metalness = 0.1;
+                buildMaterial.roughness = 0.9;
+
+                o.material = buildMaterial
 
                 console.log(o, `---${s.name}---`)
                 o.realClick = 'building';
@@ -361,78 +378,29 @@ class ThreeScene3 extends React.Component {
                   o.realClick = 'mark';
                 }
                 break;
+              case 'wall':
+                const wallMaterial = material.clone();
+                o.material = wallMaterial;
+                break;
+              case 'floor':
+                const floorMaterial = material.clone();
+                o.material = floorMaterial;
+                break;
               default:
                 console.error('未按规则分组命名模型, 无法识别QAQ', o);
                 break;
             }
           }
         });
-        this.xx = initCircle(obj);
 
+        initPyramid(obj);
         scene.add(obj);
+        setContent(camera, controls, obj)
       });
     })
 
-    gltfLoader.load('/static/modle/build2-o.gltf', object => {
-      const obj = object.scene;
-      console.log(object, obj);
-      obj.traverse(o => {
-        if (o.isMesh) {
-          o.material.transparent = true;
-          switch (o.parent.name) {
-            case 'build':
-              // const material = new THREE.MeshStandardMaterial({
-              //   // map: textureDist.build
-              //   color: '#fff'
-              // });
-              o.material = material.clone();
-              o.material.opacity = 0.9;
-              // o.material.color.set('#fff');
-              // o.material.emissive.set('#fff');
-              // o.material.map = textureDist.build;
-              // o.material.emissiveMap = textureDist.build;
-              o.material.metalness = 0.1;
-              o.material.roughness = 0.9;
+    this.xx = initCircle(scene);
 
-              console.log(o, '---build---')
-              o.realClick = 'building';
-
-              this.raycasterList.push(o);
-              break;
-            case 'fire':
-              o.material = materialFire.clone();
-              // o.material.color = new THREE.Color('#fff');
-              // o.material.emissive = new THREE.Color('#fff');
-              // o.material.map = textureDist.fire;
-              // o.material.emissiveMap = textureDist.fire;
-              o.material.metalness = 0.1;
-              o.material.roughness = 0.9;
-              o.material.visible = false;
-              o.realClick = 'floor';
-              o.shadowSide = THREE.BackSide;
-
-              if (+o.name === 300) {
-                o.material.visible = true;
-                this.fireList.push(o);
-                this.raycasterList.push(o);
-              }
-              break;
-            case 'mark':
-              // console.log('mark: ', o)
-              if (o.userData.name === 'fire-mark') {
-                o.material = o.material.clone();
-                o.material.visible = false;
-                o.realClick = 'mark';
-              }
-              break;
-            default:
-              console.error('未按规则分组命名模型, 无法识别QAQ', o);
-              break;
-          }
-        }
-      });
-      scene.add(obj);
-    });
 
   }
 
