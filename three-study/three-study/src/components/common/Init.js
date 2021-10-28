@@ -12,8 +12,8 @@ const initRenderer = () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 
   // 设置色彩空间，确保 web 呈现和模型一致
-  // renderer.outputEncoding = THREE.sRGBEncoding;
-  // renderer.gammaOutput = false;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.gammaOutput = false;
 
   // // renderer.setClearColor(0xcccccc);
   // renderer.physicallyCorrectLights = true;
@@ -36,7 +36,7 @@ const initCamera = (option = {}) => {
   camera.updateProjectionMatrix();
 
   return camera;
-}
+};
 
 const initScene = (option = {}) => {
   const { background = '#050f1c' } = option;
@@ -48,17 +48,17 @@ const initScene = (option = {}) => {
 const initLight = () => {
   const light = {};
 
-  const ambiLight = new THREE.AmbientLight('#fff', 0.65);
+  const ambiLight = new THREE.AmbientLight('#fff', 1);
   ambiLight.name = 'ambient_light';
-  ambiLight.layers.enable(0);
-  ambiLight.layers.enable(1);
-  ambiLight.layers.enable(2);
+  // ambiLight.layers.enable(0);
+  // ambiLight.layers.enable(1);
+  // ambiLight.layers.enable(2);
   light.ambiLight = ambiLight;
 
-  const directLight = new THREE.DirectionalLight('#fff', 0.65);
-  directLight.layers.enable(0);
-  directLight.layers.enable(1);
-  directLight.layers.enable(2);
+  const directLight = new THREE.DirectionalLight('#fff', 4);
+  // directLight.layers.enable(0);
+  // directLight.layers.enable(1);
+  // directLight.layers.enable(2);
   // directLight.intensity = 4;
   directLight.position.set(0.5, 10, 0.866); // ~60º
   directLight.name = 'main_light';
@@ -90,7 +90,7 @@ const initControls = (renderer, camera, option = {
   controls.enableDamping = option.enableDamping;
 
   return controls;
-}
+};
 
 const initLoader = () => {
   // gltf glb
@@ -119,6 +119,6 @@ const initLoader = () => {
     texture: textureLoader,
   };
 
-}
+};
 
 export { initRenderer, initCamera, initScene, initLight, initControls, initLoader };

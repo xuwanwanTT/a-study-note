@@ -238,7 +238,6 @@ class ThreeScene3 extends React.Component {
       this.xx.scale.x += 1;
       this.xx.scale.y += 1;
       this.xx.material.opacity -= 1 / (300);
-      console.log(this.xx.material.opacity)
       if (this.xx.scale.x > 300) {
         this.xx.scale.x = 2;
         this.xx.scale.y = 2;
@@ -300,8 +299,6 @@ class ThreeScene3 extends React.Component {
       opacity: 0.9
     });
 
-    console.log(material, '-------------------------------')
-
     const materialFire = new THREE.MeshStandardMaterial({
       map: textureDist.fire,
       transparent: true
@@ -326,9 +323,9 @@ class ThreeScene3 extends React.Component {
       // { name: 'build18' },
       // { name: 'build20' },
       // { name: 'build21' },
-      { name: 'build1-100' }
+      { name: 'C8' }
     ].map(s => {
-      gltfLoader.load(`/static/modle/floor/${s.name}.gltf`, object => {
+      gltfLoader.load(`/static/modle/${s.name}.gltf`, object => {
         const obj = object.scene;
         console.log(object, obj);
         obj.traverse(o => {
@@ -345,10 +342,12 @@ class ThreeScene3 extends React.Component {
                 buildMaterial.metalness = 0.1;
                 buildMaterial.roughness = 0.9;
 
-                o.material = buildMaterial
+                // o.material = buildMaterial
 
                 console.log(o, `---${s.name}---`)
                 o.realClick = 'building';
+
+                console.log(o, '---build---');
 
                 this.raycasterList.push(o);
                 break;
@@ -398,6 +397,9 @@ class ThreeScene3 extends React.Component {
         setContent(camera, controls, obj)
       });
     })
+
+    const light = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
+    scene.add(light);
 
     this.xx = initCircle(scene);
 
