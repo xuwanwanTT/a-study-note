@@ -323,7 +323,8 @@ class ThreeScene3 extends React.Component {
       // { name: 'build18' },
       // { name: 'build20' },
       // { name: 'build21' },
-      { name: 'C8' }
+      // { name: 'C8' },
+      {name:'A2-1'},
     ].map(s => {
       gltfLoader.load(`/static/modle/${s.name}.gltf`, object => {
         const obj = object.scene;
@@ -331,7 +332,6 @@ class ThreeScene3 extends React.Component {
         obj.traverse(o => {
           if (o.isMesh) {
             o.material.transparent = true;
-
             switch (o.parent.name) {
               case 'build':
                 // const material = new THREE.MeshStandardMaterial({
@@ -398,8 +398,18 @@ class ThreeScene3 extends React.Component {
       });
     })
 
-    const light = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
-    scene.add(light);
+    // const light = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
+    // scene.add(light);
+
+    // const directLightX = new THREE.DirectionalLight('#fff', 0.3);
+    // directLightX.position.set(1,0,0);
+    // directLightX.castShadow = true;
+    // scene.add(directLightX);
+
+    // const directLightZ = new THREE.DirectionalLight('#fff', 0.3);
+    // directLightZ.position.set(0,0,1);
+    // directLightZ.castShadow = true;
+    // scene.add(directLightZ);
 
     this.xx = initCircle(scene);
 

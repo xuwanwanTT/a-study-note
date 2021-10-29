@@ -48,25 +48,25 @@ const initScene = (option = {}) => {
 const initLight = () => {
   const light = {};
 
-  const ambiLight = new THREE.AmbientLight('#fff', 1);
+  const ambiLight = new THREE.AmbientLight('#fff', 0.4);
   ambiLight.name = 'ambient_light';
   // ambiLight.layers.enable(0);
   // ambiLight.layers.enable(1);
   // ambiLight.layers.enable(2);
   light.ambiLight = ambiLight;
 
-  const directLight = new THREE.DirectionalLight('#fff', 4);
+  const directLight = new THREE.DirectionalLight('#fff', 1);
   // directLight.layers.enable(0);
   // directLight.layers.enable(1);
   // directLight.layers.enable(2);
   // directLight.intensity = 4;
-  directLight.position.set(0.5, 10, 0.866); // ~60º
+  directLight.position.set(0.5, 1, 0.866); // ~60º
   directLight.name = 'main_light';
   // directLight.castShadow = true;
   light.directLight = directLight;
 
   // const pointLight = new THREE.PointLight(0xffffff, 0.8);
-  const pointLight = new THREE.SpotLight(0xffffff, 3);
+  const pointLight = new THREE.SpotLight(0xffffff, 1);
   pointLight.position.set(200, 1500, 200);
   // pointLight.layers.enable(0);
   // pointLight.layers.enable(1);
