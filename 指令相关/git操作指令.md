@@ -14,3 +14,6 @@ ssh-keygen -t rsa -C "xuwanwan@outlook.com"
   - --soft 不删除工作空间的改动代码, 仅撤销 commit，不撤销 git add file
   - --hard 回退到指定版本, 会删除工作空间的改动代码, 撤销 commit 且撤销 add
 
+### 报错 SSL: no alternative certificate subject name matches target host name 'github.com'
+  - ``` git comfig --global http.sslVerify false ``` 让 git 忽略 ssl 证书错误
+
