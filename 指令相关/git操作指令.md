@@ -8,6 +8,8 @@ ssh-keygen -t rsa -C "xuwanwan@outlook.com"
 ### git 版本回退
  - ``` git reflog ``` 查看当前所有commit
  - ``` git reset --hard HEAD@{n} ``` 回退到指定版本, 其中 HEAD@{n} 需查看 log 写入对应的值
+ - ``` git log --oneline ```
+ - ``` git reset --hard xxx ``` 回退到指定版本, 其中 xxx 需查看 log 写入对应的值
 
 ### git commit 撤回
  - ``` git reset --soft HEAD^ ```
@@ -24,3 +26,6 @@ ssh-keygen -t rsa -C "xuwanwan@outlook.com"
 ### 报错 SSL: no alternative certificate subject name matches target host name 'github.com'
   - ``` git comfig --global http.sslVerify false ``` 让 git 忽略 ssl 证书错误
 
+### 分支
+  - ``` git checkout -b 分支名称 ``` 从当前分支切换新分支
+  - ``` git push --set-upstream origin 分支名称 ``` 提交到远程
