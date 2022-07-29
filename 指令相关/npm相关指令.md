@@ -11,3 +11,8 @@ npm config set registry https://registry.npm.taobao.org
 #### 全局配置切换到官方源
 yarn config set registry http://www.npmjs.org
 npm config set registry http://www.npmjs.org
+
+npm link
+npm link 名称
+
+npm unlink 名称

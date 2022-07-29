@@ -26,6 +26,11 @@ ssh-keygen -t rsa -C "xuwanwan@outlook.com"
 ### 报错 SSL: no alternative certificate subject name matches target host name 'github.com'
   - ``` git comfig --global http.sslVerify false ``` 让 git 忽略 ssl 证书错误
 
-### 分支
+### 创建分支
   - ``` git checkout -b 分支名称 ``` 从当前分支切换新分支
   - ``` git push --set-upstream origin 分支名称 ``` 提交到远程
+
+### tag
+  - git tag
+  - git tag -a 名称
+  - git push --tags
