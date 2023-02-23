@@ -31,6 +31,6 @@ ssh-keygen -t rsa -C "xuwanwan@outlook.com"
   - ``` git push --set-upstream origin 分支名称 ``` 提交到远程
 
 ### tag
-  - git tag
-  - git tag -a 名称
-  - git push --tags
+  - ``` git tag ``` 查看已有 tag
+  - ``` git tag -a 名称 ``` 创建
+  - ``` git push --tags ``` 提交
