@@ -16,6 +16,10 @@ ssh-keygen -t rsa -C "xuwanwan@outlook.com"
   - --soft 不删除工作空间的改动代码, 仅撤销 commit，不撤销 git add file
   - --hard 回退到指定版本, 会删除工作空间的改动代码, 撤销 commit 且撤销 add
 
+### git merge 撤回
+  - ``` git reset --hard HEAD^ ```
+    - 同上
+
 ### 合并分支
   - ``` git checkout 分支A ``` 切换到目标分支
   - ``` git merge 分支B ``` 将分支B合并到分支A
