@@ -38,3 +38,9 @@ ssh-keygen -t rsa -C "xuwanwan@outlook.com"
   - ``` git tag ``` 查看已有 tag
   - ``` git tag -a 名称 ``` 创建
   - ``` git push --tags ``` 提交
+
+### 新增 ignore 文件
+  - ``` git rm --cached -r 文件路径 ```
+  - commit
+  - push
+  - 重新打开编辑器可见效果
