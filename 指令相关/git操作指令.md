@@ -44,3 +44,6 @@ ssh-keygen -t rsa -C "xuwanwan@outlook.com"
   - commit
   - push
   - 重新打开编辑器可见效果
+
+### fatal: refusing to merge unrelated histories
+  - ``` git pull --allow-unrelated-histories ```
