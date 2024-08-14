@@ -53,7 +53,7 @@
 
 在 package.json 中添加配置，添加 ``` "bin":{"t": "cli.js"} ```，这样可以在命令行中使用 t 进行工具的使用；添加 ``` "files":["*.js"] ```，表示需要上传所有的 js 文件，package.json 和 README.md 这两个文件默认会被上传。
 
-由于需要让用户执行 cli.js 文件中的命令，所以要给文件添加可执行权限，``` chmod +x cli.js ```
+由于需要让用户执行 cli.js 文件中的命令，在 cli.js 文件的第一行需要添加 shebang ``` #!/usr/bin/env node ```，还要给文件添加可执行权限，``` chmod +x cli.js ```
 
 npm 切换到官方源，这里使用工具 nrm，``` nrm use npm ```
 
