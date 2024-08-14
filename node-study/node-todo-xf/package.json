@@ -1,9 +1,16 @@
 {
   "name": "node-todo-xf",
-  "version": "1.0.0",
+  "bin": {
+    "t": "cli.js"
+  },
+  "files": [
+    "*.js"
+  ],
+  "version": "0.0.3",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "commander": "^6.0.0"
+    "@inquirer/prompts": "^5.3.8",
+    "commander": "^12.1.0"
   }
 }

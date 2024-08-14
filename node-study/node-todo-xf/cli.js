@@ -1,25 +1,34 @@
-const { program } = require('commander');
-program.version('0.0.1');
+#!/usr/bin/env node
+
+const { Command } = require('commander');
 const api = require('./index.js');
 
+const program = new Command();
+
 program
-  .option('-x, --xxx', '描述')
+  .version('0.0.1');
 
 program
   .command('add')
-  .description('添加')
-  .action((...args) => {
-    let word = args[0].args.join(' ');
-    api.add(word);
+  .argument('<arg...>')
+  .description('new todo')
+  .action((arg) => {
+    const worlds = arg.join(' ');
+    api.add(worlds);
   });
 
 program
   .command('clear')
-  .description('清空')
-  .action((...args) => {
-    let word = args[0].args.join(' ');
-    console.log(word);
+  .description('clear all todo')
+  .action(() => {
+    api.clear();
   });
 
+program
+  .command('ls')
+  .description('show all')
+  .action(() => {
+    api.showAll();
+  });
 
 program.parse(process.argv);
