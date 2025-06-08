@@ -16,3 +16,10 @@ npm link
 npm link 名称
 
 npm unlink 名称
+
+
+### nvm 使用
+
+nvm list
+
+nvm use 版本号
